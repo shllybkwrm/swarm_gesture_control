@@ -31,6 +31,7 @@ from matplotlib import pyplot as plt
 #    from matplotlib import cm
 #    from matplotlib.lines import Line2D
 
+CV = 0
 
 
 
@@ -130,7 +131,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
 #        clf.fit(X_train, y_train)
 #        print "Accuracy:", clf.score(X_test, y_test)
    
-    if PLOT:
+    if PLOT and CV:
         plt.figure()
         plt.subplot(121)
     #    train_sizes, train_scores, valid_scores = learning_curve(clf, X, y, train_sizes=[50, 80, 110], cv=10)
@@ -163,7 +164,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         plt.show()
     
     
-    else:
+    elif CV:
         # From http://docs.scipy.org/doc/numpy/reference/generated/numpy.reshape.html
         scores = cross_validation.cross_val_score(clf, dataSet, dataLabels, cv=10)
         print("XVal Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
@@ -185,12 +186,13 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     # Compute confusion matrix - no need to normalize here
     cm = confusion_matrix(testLabels[:,0], predictions)
     np.set_printoptions(precision=2)
-    print('Confusion matrix, without normalization:\n')
-    print(cm)
+    print "Confusion matrix, without normalization:\n", cm
+    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    print "Normalized CM:\n", cm_normalized
     if PLOT:
 #        plt.figure()
         plt.subplot(122)
-        plot_confusion_matrix(cm, label_names)
+        plot_confusion_matrix(cm_normalized, label_names)
         plt.show()
     
     print classification_report(testLabels[:,0], predictions, target_names=label_names)
@@ -276,7 +278,7 @@ def processFiles(files, vidDict):
             if vidDict[filename]=="R":
                 count=5
             else:
-                count=0
+                count=0            
             
             for idx,angles in enumerate(angleSet):  # all angles from one gesture e.g. B30
                 if len(angles)==2:
@@ -291,7 +293,7 @@ def processFiles(files, vidDict):
                         angleSetLR = np.append(angleSetLR, [angles], axis=0)
                     
                     
-                elif idx < middle:
+                elif idx < middle:  # first half
                     if vidDict[filename]=="L":
                         if idx % sixth == 0:  # Save specific test points
                             testSetL = np.append(testSetL, angles)
@@ -345,7 +347,7 @@ def processFiles(files, vidDict):
 #                    else:
 #                        pass
                     
-#            print filename, "generated", count, "test points"
+#            print filename, "> generated", count, "test points"
                     
         
         # only happens once per gesture 
@@ -381,7 +383,6 @@ def processFiles(files, vidDict):
     testLabelsL = testLabelsL[1:]
     testLabelsLR = testLabelsLR[1:]
     testLabelsR = testLabelsR[1:]
-    print "Created holdout test sets."
     
     # CHECK THIS - not using yet
 #    test_names = [ ["videoB30m","videoB25m","videoB20m","videoB15m","videoB10m"], 
@@ -394,6 +395,36 @@ def processFiles(files, vidDict):
     dataLabelsL, dataLabelsLR, dataLabelsR,
     testSetL, testSetLR, testSetR,
     testLabelsL, testLabelsLR, testLabelsR)
+
+
+
+
+def plotCustomCM(testData, title="Test set results"):
+    cm = np.zeros((5,6))  # (y,x)
+    for testPoint in testData:
+        [res,x,y] = testPoint
+        yp = [1, 1.5, 2, 2.5, 3]
+        fp = range(5)
+        y = int( np.interp(y, yp, fp) )
+        cm[y,x] += res
+    
+    print "Results:\n", cm
+    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    print "As normalized CM:\n", cm_normalized
+    
+    
+    plt.figure()
+    
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title(title)
+    plt.colorbar()
+    plt.xticks(np.arange(6), np.arange(6), rotation=45)
+    plt.yticks(np.arange(5), [1, 1.5, 2, 2.5, 3])
+    plt.tight_layout()
+    plt.ylabel('Distance from controller')
+    plt.xlabel('Position on semicircle')
+    
+    plt.show()
 
 
 
@@ -418,6 +449,7 @@ if __name__ == "__main__":
     testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict)
     
     
+    
     # ----- L -----
     print "\nRunning classification for left arm data"
     label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
@@ -437,33 +469,27 @@ if __name__ == "__main__":
     testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title)
 
 
+
     testLabels = np.concatenate((testLabelsL, testLabelsLR, testLabelsR))  # , dtype=[('x', int), ('y', float)]
-    testData = np.concatenate((testResultL, testResultLR, testResultR))
-    testLabels[:,0]=testLabels[:,0]==testData  # Which results were correct
+    testResults = np.concatenate((testResultL, testResultLR, testResultR))
+#    testLabels.view('i8,i8,i8').sort(order=['f0','f2','f1'], axis=0)
+    testData = testLabels.copy()
+    testData[:,0] = (testData[:,0]==testResults)  # Which results were correct
 
-    cm = np.zeros((5,6))  # (y,x)
-    for testPoint in testLabels:
-        [res,x,y] = testPoint
-        yp = [1, 1.5, 2, 2.5, 3]
-        fp = range(5)
-        y = int( np.interp(y, yp, fp) )
-        cm[y,x] += res
-    
-    print "Results:\n", cm
+    print "Regular structured test points (6 per distance)"
+    title = "Test set results"
+    plotCustomCM(testData, title)
     
     
-    plt.figure()
+#    testIdx = np.random.randint(0,30,5)
+    testIdx = np.arange(30)
+    np.random.shuffle( testIdx )
+    shuffleData = testData[testIdx]
     
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title("Test set results")
-    plt.colorbar()
-    plt.xticks(np.arange(6), np.arange(6), rotation=45)
-    plt.yticks(np.arange(5), [1, 1.5, 2, 2.5, 3])
-    plt.tight_layout()
-    plt.ylabel('Distance from controller')
-    plt.xlabel('Position on semicircle')
-    
-    plt.show()
+    numPoints = 5
+    iterations = int(30/numPoints)
+    for i in range(iterations):
+        pass #do stuff??
 
-
+# TODO:  sort, split by gesture, test randomized swarms
 
