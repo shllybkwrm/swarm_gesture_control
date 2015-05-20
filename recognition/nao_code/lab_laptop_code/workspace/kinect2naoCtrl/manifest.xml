@@ -1,0 +1,21 @@
+<package>
+  <description brief="kinect2naoCtrl">
+
+     kinect2naoCtrl
+
+  </description>
+  <author>labuser</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/kinect2naoCtrl</url>
+  <depend package="roscpp"/>
+  <depend package="humanoid_nav_msgs"/>
+  <depend package="nao_description"/>
+  <depend package="nao_remote"/>
+  <depend package="nao_teleop"/>
+  <depend package="nao_driver"/>
+  <depend package="nao_msgs"/>
+
+</package>
+
+

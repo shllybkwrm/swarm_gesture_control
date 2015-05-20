@@ -1,0 +1,10 @@
+- svn:
+    uri: https://alufr-ros-pkg.googlecode.com/svn/trunk/humanoid_stacks/humanoid_msgs
+    local-name: stacks/humanoid_msgs
+- svn:
+    uri: https://alufr-ros-pkg.googlecode.com/svn/trunk/humanoid_stacks/nao_robot
+    local-name: stacks/nao_robot
+- svn:
+    uri: https://alufr-ros-pkg.googlecode.com/svn/trunk/humanoid_stacks/nao_common
+    local-name: stacks/nao_common
+

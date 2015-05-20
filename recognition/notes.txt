@@ -1,0 +1,25 @@
+Video notes (L,R from viewer/robot's pov - for now assuming L to R)
+B30 - L to R - done 
+B25 - R to L - done (not checked)
+B20 - R to L - done (not checked)
+B15 - L to R - done
+B10 - L to R - done
+
+D30 - L to R - has a jump - done
+D25 - R to L - done (not checked)
+D20 - L to R - has midriff issues - done
+D15 - R to L - done (not checked) - high
+D10 - L to R - has midriff issues - done
+
+G30 - R to L - done (not checked)
+G25 - L to R - has a jump - done, could improve
+G20 - R to L - done (not checked) - pretty high
+G15 - L to R - has a jump & bg noise - done, could improve
+G10 - R to L - done (not checked) - really high number found
+
+M30 - R to L - done (not checked)
+M25 - R to L - done (not checked)
+M20 - L to R - done
+M15 - R to L - done (not checked)
+M10 - L to R - has a jump - done
+
