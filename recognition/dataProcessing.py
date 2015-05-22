@@ -177,9 +177,11 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         
     ### ----- Test specific points ----- ###
     print "Testing specific points (held out)"
-        # Apparently xval doesn't return fitted SVM?
     
+    # Apparently xval doesn't return fitted SVM?  Fit again
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
+    confidence = clf.decision_function(testSet)  # higher is better
+#    print "Uncertainty (in dist to separator) is:\n", confidence
 #    print "Predictions are:\n", predictions
 #    print "Expected:\n", testLabels[:,0]
     
@@ -198,12 +200,12 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     print classification_report(testLabels[:,0], predictions, target_names=label_names)
     
 #    testLabels = np.append(testLabels, predictions, axis=1)
-    return predictions
+    return np.concatenate((predictions.reshape(-1,1).astype(int), confidence.max(axis=1).reshape(-1,1)), axis=1)
      
 
 
 
-def processFiles(files, vidDict):
+def processFiles(files, vidDict, num_points):
         # should these be 1 or (1,1)?
     dataSetL = np.zeros((1,1))  # Dummy entry that needs to be removed later!
     dataSetLR = np.zeros((1,2))
@@ -272,7 +274,7 @@ def processFiles(files, vidDict):
             
             # Add to cumulative angleSet for each gesture 
             middle = len(angleSet)/2
-            sixth = math.ceil( float(len(angleSet))/6 )  # round up so all have 6 points, not 7
+            interval = math.ceil( float(len(angleSet))/ num_points )  # round up so all have 6 (or num_points) points, not 7
             dist = [int(s) for s in filename if s.isdigit()]
             dist = float(''.join(map(str,dist)))/10
             if vidDict[filename]=="R":
@@ -282,7 +284,7 @@ def processFiles(files, vidDict):
             
             for idx,angles in enumerate(angleSet):  # all angles from one gesture e.g. B30
                 if len(angles)==2:
-                    if idx % sixth == 0:  # Save specific test points
+                    if idx % interval == 0:  # Save specific test points
                         testSetLR = np.append(testSetLR, [angles], axis=0)
                         testLabelsLR = np.append(testLabelsLR, np.array([[classID,count,dist]]), axis=0 )
                         if vidDict[filename]=="R":
@@ -295,7 +297,7 @@ def processFiles(files, vidDict):
                     
                 elif idx < middle:  # first half
                     if vidDict[filename]=="L":
-                        if idx % sixth == 0:  # Save specific test points
+                        if idx % interval == 0:  # Save specific test points
                             testSetL = np.append(testSetL, angles)
                             testLabelsL = np.append(testLabelsL, np.array([[classID,count,dist]]), axis=0 )
                             count+=1
@@ -304,7 +306,7 @@ def processFiles(files, vidDict):
                     
                             
                     elif vidDict[filename]=="R":
-                        if idx % sixth == 0:  # Save specific test points
+                        if idx % interval == 0:  # Save specific test points
                             testSetR = np.append(testSetR, angles)
                             testLabelsR = np.append(testLabelsR, np.array([[classID,count,dist]]), axis=0 )
                             count-=1
@@ -317,7 +319,7 @@ def processFiles(files, vidDict):
                     
                 else:  # second half
                     if vidDict[filename]=="L":                    
-                        if idx % sixth == 0:  # Save specific test points
+                        if idx % interval == 0:  # Save specific test points
                             testSetR = np.append(testSetR, angles)
                             testLabelsR = np.append(testLabelsR, np.array([[classID,count,dist]]), axis=0 )
                             count+=1
@@ -325,7 +327,7 @@ def processFiles(files, vidDict):
                             angleSetR = np.append(angleSetR, angles)
                             
                     elif vidDict[filename]=="R":
-                        if idx % sixth == 0:  # Save specific test points
+                        if idx % interval == 0:  # Save specific test points
                             testSetL = np.append(testSetL, angles)
                             testLabelsL = np.append(testLabelsL, np.array([[classID,count,dist]]), axis=0 )
                             count-=1
@@ -384,7 +386,7 @@ def processFiles(files, vidDict):
     testLabelsLR = testLabelsLR[1:]
     testLabelsR = testLabelsR[1:]
     
-    # CHECK THIS - not using yet
+    # CHECK THIS - not needed?
 #    test_names = [ ["videoB30m","videoB25m","videoB20m","videoB15m","videoB10m"], 
 #                 ["videoD30m","videoD25m","videoD20m","videoD15m","videoD10m"],
 #                 ["videoG30m","videoG25m","videoG20m","videoG15m","videoG10m"], 
@@ -436,6 +438,10 @@ if __name__ == "__main__":
              ["videoD30m","videoD25m","videoD20m","videoD15m","videoD10m"],
              ["videoG30m","videoG25m","videoG20m","videoG15m","videoG10m"], 
              ["videoM30m","videoM25m","videoM20m","videoM15m","videoM10m"]]
+
+    num_gestures = len(files)
+    num_dist = len(files[0])
+    num_points = 6
     
     vidDict = {"videoB30m":"L", "videoB25m":"R", "videoB20m":"R", "videoB15m":"L", "videoB10m":"L",
                "videoD30m":"L", "videoD25m":"R", "videoD20m":"L", "videoD15m":"R", "videoD10m":"L",
@@ -446,7 +452,7 @@ if __name__ == "__main__":
     (dataSetL, dataSetLR, dataSetR, 
     dataLabelsL, dataLabelsLR, dataLabelsR,
     testSetL, testSetLR, testSetR,
-    testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict)
+    testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points)
     
     
     
@@ -472,24 +478,39 @@ if __name__ == "__main__":
 
     testLabels = np.concatenate((testLabelsL, testLabelsLR, testLabelsR))  # , dtype=[('x', int), ('y', float)]
     testResults = np.concatenate((testResultL, testResultLR, testResultR))
-#    testLabels.view('i8,i8,i8').sort(order=['f0','f2','f1'], axis=0)
-    testData = testLabels.copy()
-    testData[:,0] = (testData[:,0]==testResults)  # Which results were correct
+    
+    # Sort by gesture, position, distance
+    testData = np.concatenate((testLabels, testResults),axis=1)  # act, pos, dist, res, conf
+    testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)
+#    testData = testLabels.copy()
+    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
 
-    print "Regular structured test points (6 per distance)"
-    title = "Test set results"
-    plotCustomCM(testData, title)
-    
-    
+    print "Regular structured test points (per distance:", num_points, ")"
+    if PLOT:
+        plotCustomCM(testLabels, title = "Test set results")
+        
+    # Get random order to create swarms
 #    testIdx = np.random.randint(0,30,5)
-    testIdx = np.arange(30)
+    points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
+    print "Total possible test points (for each gesture):", points_per_gesture
+    testIdx = np.arange(points_per_gesture)
     np.random.shuffle( testIdx )
-    shuffleData = testData[testIdx]
+#    shuffleData = testData[testIdx]
     
-    numPoints = 5
-    iterations = int(30/numPoints)
-    for i in range(iterations):
-        pass #do stuff??
+    splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
+    for i in range(num_gestures):
+#    for gesture in splitResults:
+        # Split by gesture
+        splitResults[i] = testData[ testData[:,0]==i ]
+        # go through all possible swarms for each gesture
+#        for swarm in range(num_points):  
+        # swarms of same size already chosen so can evenly split
+        shuffleData = splitResults[i][testIdx]
+        swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
+        for idx,swarm in enumerate(swarms):
+#            if PLOT:
+            title = "Results for swarm "+str(idx)+" of size "+str(num_points)
+            plotCustomCM(swarm, title)
 
 # TODO:  sort, split by gesture, test randomized swarms
 
