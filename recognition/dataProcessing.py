@@ -401,16 +401,16 @@ def processFiles(files, vidDict, num_points):
 
 
 
-def plotCustomCM(testData, title="Test set results"):
-    cm = np.zeros((5,6))  # (y,x)
+def plotCustomCM(testData, num_dist, num_points, title="Test set results"):
+    cm = np.zeros((num_dist, num_points))  # (y,x)
+    yp = [1, 1.5, 2, 2.5, 3]
+    fp = range(num_dist)
     for testPoint in testData:
         [res,x,y] = testPoint
-        yp = [1, 1.5, 2, 2.5, 3]
-        fp = range(5)
         y = int( np.interp(y, yp, fp) )
         cm[y,x] += res
     
-    print "Results:\n", cm
+    print "CM:\n", cm, "\n"
     cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     print "As normalized CM:\n", cm_normalized
     
@@ -420,8 +420,38 @@ def plotCustomCM(testData, title="Test set results"):
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title(title)
     plt.colorbar()
-    plt.xticks(np.arange(6), np.arange(6), rotation=45)
-    plt.yticks(np.arange(5), [1, 1.5, 2, 2.5, 3])
+    plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
+    plt.yticks(np.arange(num_dist), yp)
+    plt.tight_layout()
+    plt.ylabel('Distance from controller')
+    plt.xlabel('Position on semicircle')
+    
+    plt.show()
+
+
+
+
+def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results"):
+    cm = np.zeros((num_dist, num_points))  # (y,x)
+    yp = [1, 1.5, 2, 2.5, 3]
+    fp = range(num_dist)
+    for testPoint in testData:
+        [act,x,y,res,conf] = testPoint
+        y = int( np.interp(y, yp, fp) )
+        cm[y,x] += conf  # Regardless of correctness!!
+    
+    print "Confidence CM:\n", cm, "\n"
+#    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+#    print "As normalized CM:\n", cm_normalized
+    
+    
+    plt.figure()
+    
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title(title)
+    plt.colorbar()
+    plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
+    plt.yticks(np.arange(num_dist), yp)
     plt.tight_layout()
     plt.ylabel('Distance from controller')
     plt.xlabel('Position on semicircle')
@@ -487,8 +517,9 @@ if __name__ == "__main__":
 
     print "Regular structured test points (per distance:", num_points, ")"
     if PLOT:
-        plotCustomCM(testLabels, title = "Test set results")
+        plotCustomCM(testLabels, num_dist, num_points, title = "Test set results")
         
+    print "Creating random swarms"
     # Get random order to create swarms
 #    testIdx = np.random.randint(0,30,5)
     points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
@@ -509,8 +540,9 @@ if __name__ == "__main__":
         swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
         for idx,swarm in enumerate(swarms):
 #            if PLOT:
-            title = "Results for swarm "+str(idx)+" of size "+str(num_points)
-            plotCustomCM(swarm, title)
+            title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
+            print title
+            plotConfidenceCM(swarm, num_dist, num_points, title)
 
 # TODO:  sort, split by gesture, test randomized swarms
 
