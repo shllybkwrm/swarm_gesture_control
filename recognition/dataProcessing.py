@@ -187,7 +187,6 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     
     # Compute confusion matrix - no need to normalize here
     cm = confusion_matrix(testLabels[:,0], predictions)
-    np.set_printoptions(precision=2)
     print "Confusion matrix, without normalization:\n", cm
     cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     print "Normalized CM:\n", cm_normalized
@@ -438,7 +437,10 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
     for testPoint in testData:
         [act,x,y,res,conf] = testPoint
         y = int( np.interp(y, yp, fp) )
-        cm[y,x] += conf  # Regardless of correctness!!
+        if res==act:  # Check for correct recognition
+            cm[y,x] += abs(conf)
+        else:  # Mark other robots in the swarm (incorrect rec)
+            cm[y,x] += -1*abs(conf)
     
     print "Confidence CM:\n", cm, "\n"
 #    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
@@ -447,7 +449,11 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
     
     plt.figure()
     
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.RdBu)
+    # Find range of values & set colorbar range around it
+    maxVal = max(cm.max(), cm.min(), key=abs)
+    plt.clim(-1*maxVal,maxVal)
+    
     plt.title(title)
     plt.colorbar()
     plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
@@ -463,6 +469,7 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
 
 if __name__ == "__main__":
     plt.close("all")
+    np.set_printoptions(precision=2)
     
     files = [["videoB30m","videoB25m","videoB20m","videoB15m","videoB10m"], 
              ["videoD30m","videoD25m","videoD20m","videoD15m","videoD10m"],
@@ -517,7 +524,8 @@ if __name__ == "__main__":
 
     print "Regular structured test points (per distance:", num_points, ")"
     if PLOT:
-        plotCustomCM(testLabels, num_dist, num_points, title = "Test set results")
+        plotCustomCM(testLabels, num_dist, num_points, title="Test set results")
+    plotConfidenceCM(testData, num_dist, num_points, title="Cumulative test set results by confidence")
         
     print "Creating random swarms"
     # Get random order to create swarms
@@ -530,19 +538,20 @@ if __name__ == "__main__":
     
     splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
     for i in range(num_gestures):
-#    for gesture in splitResults:
         # Split by gesture
         splitResults[i] = testData[ testData[:,0]==i ]
+        plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
+        
         # go through all possible swarms for each gesture
 #        for swarm in range(num_points):  
         # swarms of same size already chosen so can evenly split
         shuffleData = splitResults[i][testIdx]
         swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
         for idx,swarm in enumerate(swarms):
-#            if PLOT:
-            title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
-            print title
-            plotConfidenceCM(swarm, num_dist, num_points, title)
+            if PLOT:
+                title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
+                print title, "\n", swarm
+                plotConfidenceCM(swarm, num_dist, num_points, title)  # Combine these into subplots!
 
 # TODO:  sort, split by gesture, test randomized swarms
 
