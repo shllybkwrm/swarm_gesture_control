@@ -466,6 +466,39 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
 
 
 
+def plotBarChart(gestureData, num_gestures=4, title="Bar chart"):
+    votes = np.zeros((num_gestures,1))
+    weights = np.zeros((num_gestures,1))
+    for idx,testPoint in enumerate(gestureData):
+        [act,x,y,res,conf] = testPoint
+        votes[res] += 1
+        weights[res] += conf
+    
+    plt.figure()
+    plt.subplot(121)
+    
+    plt.title(title)
+    plt.bar(range(num_gestures), votes)
+    plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
+#    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+    plt.tight_layout()
+    plt.ylabel('Votes')
+    plt.xlabel('Gestures')
+    
+    plt.subplot(122)
+    
+    plt.title("Weighted "+title)
+    plt.bar(range(num_gestures), weights)
+    plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
+#    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+    plt.tight_layout()
+    plt.ylabel('Weighted votes')
+    plt.xlabel('Gestures')
+    
+    plt.show()
+
+
+
 
 if __name__ == "__main__":
     plt.close("all")
@@ -525,7 +558,7 @@ if __name__ == "__main__":
     print "Regular structured test points (per distance:", num_points, ")"
     if PLOT:
         plotCustomCM(testLabels, num_dist, num_points, title="Test set results")
-    plotConfidenceCM(testData, num_dist, num_points, title="Cumulative test set results by confidence")
+        plotConfidenceCM(testData, num_dist, num_points, title="Cumulative test set results by confidence")
         
     print "Creating random swarms"
     # Get random order to create swarms
@@ -540,7 +573,10 @@ if __name__ == "__main__":
     for i in range(num_gestures):
         # Split by gesture
         splitResults[i] = testData[ testData[:,0]==i ]
-        plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
+        
+        if PLOT:
+            plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
+        plotBarChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
         
         # go through all possible swarms for each gesture
 #        for swarm in range(num_points):  
