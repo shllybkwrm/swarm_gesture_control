@@ -410,8 +410,8 @@ def plotCustomCM(testData, num_dist, num_points, title="Test set results"):
         cm[y,x] += res
     
     print "CM:\n", cm, "\n"
-    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    print "As normalized CM:\n", cm_normalized
+#    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+#    print "As normalized CM:\n", cm_normalized
     
     
     plt.figure()
@@ -466,13 +466,15 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
 
 
 
-def plotBarChart(gestureData, num_gestures=4, title="Bar chart"):
+def plotVoteChart(gestureData, num_gestures=4, title="Vote chart"):
     votes = np.zeros((num_gestures,1))
     weights = np.zeros((num_gestures,1))
     for idx,testPoint in enumerate(gestureData):
         [act,x,y,res,conf] = testPoint
         votes[res] += 1
         weights[res] += conf
+    
+    print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
     
     plt.figure()
     plt.subplot(121)
@@ -557,7 +559,7 @@ if __name__ == "__main__":
 
     print "Regular structured test points (per distance:", num_points, ")"
     if PLOT:
-        plotCustomCM(testLabels, num_dist, num_points, title="Test set results")
+        plotCustomCM(testLabels, num_dist, num_points, title="Cumulative test set results")
         plotConfidenceCM(testData, num_dist, num_points, title="Cumulative test set results by confidence")
         
     print "Creating random swarms"
@@ -571,12 +573,13 @@ if __name__ == "__main__":
     
     splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
     for i in range(num_gestures):
+        print "Gesture", i
         # Split by gesture
         splitResults[i] = testData[ testData[:,0]==i ]
         
         if PLOT:
             plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
-        plotBarChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
+            plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
         
         # go through all possible swarms for each gesture
 #        for swarm in range(num_points):  
