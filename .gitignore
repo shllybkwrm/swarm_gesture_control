@@ -15,7 +15,6 @@ local.properties
 .classpath
 .settings/
 .loadpath
-.avi
 
 # External tool builders
 .externalToolBuilders/
@@ -210,8 +209,16 @@ pip-log.txt
 .coverage
 .tox
 
-#Translations
+# Translations
 *.mo
 
-#Mr Developer
+# Mr Developer
 .mr.developer.cfg
+
+
+#############
+## Other
+#############
+
+# Video files
+*.avi
