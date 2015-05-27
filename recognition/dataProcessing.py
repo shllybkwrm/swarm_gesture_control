@@ -11,7 +11,7 @@ from sklearn import cross_validation
 from sklearn.svm import SVC
 from sklearn.learning_curve import learning_curve
 from sklearn.metrics import confusion_matrix, classification_report
-#from sklearn.cluster import KMeans
+from scipy import stats
 try:
    import cPickle as pickle
 except:
@@ -400,27 +400,52 @@ def processFiles(files, vidDict, num_points):
 
 
 
-def plotCustomCM(testData, num_dist, num_points, title="Test set results"):
+def plotResultMatrices(testData, num_dist, num_points, title="Test set results"):
     cm = np.zeros((num_dist, num_points))  # (y,x)
-    yp = [1, 1.5, 2, 2.5, 3]
-    fp = range(num_dist)
+    cm_conf = np.zeros((num_dist, num_points))
+    y_range = [1, 1.5, 2, 2.5, 3]
+    input_range = range(num_dist)
     for testPoint in testData:
-        [res,x,y] = testPoint
-        y = int( np.interp(y, yp, fp) )
-        cm[y,x] += res
+        [act,x,y,res,conf] = testPoint
+        y = int( np.interp(y, y_range, input_range) )
+        if res==act:  # Check for correct recognition
+            cm[y,x] += 1
+            cm_conf[y,x] += abs(conf)
+        else:  # Mark other robots in the swarm (incorrect rec)
+            cm_conf[y,x] += -1*abs(conf)
     
     print "CM:\n", cm, "\n"
+    print "Confidence CM:\n", cm_conf, "\n"
 #    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 #    print "As normalized CM:\n", cm_normalized
     
     
     plt.figure()
+    plt.subplot(121)
     
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    # Find range of values & set colorbar range around it
+    plt.clim(0, cm.max())
+    
     plt.title(title)
     plt.colorbar()
     plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
-    plt.yticks(np.arange(num_dist), yp)
+    plt.yticks(np.arange(num_dist), y_range)
+    plt.tight_layout()
+    plt.ylabel('Distance from controller')
+    plt.xlabel('Position on semicircle')
+    
+    plt.subplot(122)
+    
+    plt.imshow(cm_conf, interpolation='nearest', cmap=plt.cm.RdBu)
+    # Find range of values & set colorbar range around it
+    maxVal = max(cm_conf.max(), cm_conf.min(), key=abs)
+    plt.clim(-1*maxVal,maxVal)
+    
+    plt.title(title+" by confidence")
+    plt.colorbar()
+    plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
+    plt.yticks(np.arange(num_dist), y_range)
     plt.tight_layout()
     plt.ylabel('Distance from controller')
     plt.xlabel('Position on semicircle')
@@ -432,11 +457,11 @@ def plotCustomCM(testData, num_dist, num_points, title="Test set results"):
 
 def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results"):
     cm = np.zeros((num_dist, num_points))  # (y,x)
-    yp = [1, 1.5, 2, 2.5, 3]
-    fp = range(num_dist)
+    y_range = [1, 1.5, 2, 2.5, 3]
+    input_range = range(num_dist)
     for testPoint in testData:
         [act,x,y,res,conf] = testPoint
-        y = int( np.interp(y, yp, fp) )
+        y = int( np.interp(y, y_range, input_range) )
         if res==act:  # Check for correct recognition
             cm[y,x] += abs(conf)
         else:  # Mark other robots in the swarm (incorrect rec)
@@ -457,7 +482,7 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
     plt.title(title)
     plt.colorbar()
     plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
-    plt.yticks(np.arange(num_dist), yp)
+    plt.yticks(np.arange(num_dist), y_range)
     plt.tight_layout()
     plt.ylabel('Distance from controller')
     plt.xlabel('Position on semicircle')
@@ -555,12 +580,13 @@ if __name__ == "__main__":
     testData = np.concatenate((testLabels, testResults),axis=1)  # act, pos, dist, res, conf
     testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)
 #    testData = testLabels.copy()
-    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
+#    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
 
-    print "Regular structured test points (per distance:", num_points, ")"
+
+    print "Regularly-spaced test points (", num_points, "per distance)"
     if PLOT:
-        plotCustomCM(testLabels, num_dist, num_points, title="Cumulative test set results")
-        plotConfidenceCM(testData, num_dist, num_points, title="Cumulative test set results by confidence")
+        plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results")
+
         
     print "Creating random swarms"
     # Get random order to create swarms
@@ -572,6 +598,9 @@ if __name__ == "__main__":
 #    shuffleData = testData[testIdx]
     
     splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
+    rows = ["Gesture 1","Gesture 2","Gesture 3","Gesture 4"]
+    columns = ["Desired Mean","Actual Mean","t-value","p-value","p < 0.05?"]
+    cell_text = np.zeros((len(rows), len(columns)))
     for i in range(num_gestures):
         print "Gesture", i
         # Split by gesture
@@ -580,6 +609,13 @@ if __name__ == "__main__":
         if PLOT:
             plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
             plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
+        
+        # Hypothesis test to see if there is a significant difference
+        # Returns t, two-tailed p-val
+        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i)
+        cell_text[i] = [i, np.mean(splitResults[i][:,3]), t, p, (p<0.05)]
+        print "Desired mean:", i, "mean result:", np.mean(splitResults[i][:,3])
+        print "T-test:", t,p
         
         # go through all possible swarms for each gesture
 #        for swarm in range(num_points):  
@@ -592,5 +628,11 @@ if __name__ == "__main__":
                 print title, "\n", swarm
                 plotConfidenceCM(swarm, num_dist, num_points, title)  # Combine these into subplots!
 
-# TODO:  sort, split by gesture, test randomized swarms
+        plt.figure()
+        
+        plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
 
+        plt.show()
+
+
+# TODO: weight gestures with 2 arms higher?
