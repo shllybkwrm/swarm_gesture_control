@@ -540,7 +540,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)
     num_dist = len(files[0])
-    num_points = 10
+    num_points = 3
     
     vidDict = {"videoB30m":"L", "videoB25m":"R", "videoB20m":"R", "videoB15m":"L", "videoB10m":"L",
                "videoD30m":"L", "videoD25m":"R", "videoD20m":"L", "videoD15m":"R", "videoD10m":"L",
