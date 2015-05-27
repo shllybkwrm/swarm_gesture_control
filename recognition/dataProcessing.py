@@ -123,9 +123,11 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         clf = SVC(C=0.75)
         dataSet = dataSet.reshape(-1, 1)
         testSet = testSet.reshape(-1, 1)
+        weight = 1
         
     else:
         clf = SVC(C=1.0)
+        weight = 2
     
 #        X_train, X_test, y_train, y_test = cross_validation.train_test_split(dataSet, dataLabels, test_size=0.1, random_state=0)
 #        clf.fit(X_train, y_train)
@@ -180,14 +182,14 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     
     # Apparently xval doesn't return fitted SVM?  Fit again
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
-    confidence = clf.decision_function(testSet)  # higher is better
+    confidence = weight * clf.decision_function(testSet)  # higher is better
 #    print "Uncertainty (in dist to separator) is:\n", confidence
 #    print "Predictions are:\n", predictions
 #    print "Expected:\n", testLabels[:,0]
     
     # Compute confusion matrix - no need to normalize here
     cm = confusion_matrix(testLabels[:,0], predictions)
-    print "Confusion matrix, without normalization:\n", cm
+    print "Confusion matrix (without normalization):\n", cm
     cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     print "Normalized CM:\n", cm_normalized
     if PLOT:
@@ -608,7 +610,7 @@ if __name__ == "__main__":
         
         if PLOT:
             plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
-            plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
+        plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
         
         # Hypothesis test to see if there is a significant difference
         # Returns t, two-tailed p-val
@@ -628,11 +630,11 @@ if __name__ == "__main__":
                 print title, "\n", swarm
                 plotConfidenceCM(swarm, num_dist, num_points, title)  # Combine these into subplots!
 
-        plt.figure()
-        
-        plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
-
-        plt.show()
+#        plt.figure()
+#        
+#        plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
+#
+#        plt.show()
 
 
 # TODO: weight gestures with 2 arms higher?
