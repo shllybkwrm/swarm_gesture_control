@@ -431,7 +431,7 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results")
     
     plt.title(title)
     plt.colorbar()
-    plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
+    plt.xticks(np.arange(num_points), np.arange(num_points))
     plt.yticks(np.arange(num_dist), y_range)
     plt.tight_layout()
     plt.ylabel('Distance from controller')
@@ -446,7 +446,7 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results")
     
     plt.title(title+" by confidence")
     plt.colorbar()
-    plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
+    plt.xticks(np.arange(num_points), np.arange(num_points))
     plt.yticks(np.arange(num_dist), y_range)
     plt.tight_layout()
     plt.ylabel('Distance from controller')
@@ -483,7 +483,7 @@ def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results")
     
     plt.title(title)
     plt.colorbar()
-    plt.xticks(np.arange(num_points), np.arange(num_points), rotation=45)
+    plt.xticks(np.arange(num_points), np.arange(num_points))
     plt.yticks(np.arange(num_dist), y_range)
     plt.tight_layout()
     plt.ylabel('Distance from controller')
@@ -537,104 +537,109 @@ if __name__ == "__main__":
              ["videoD30m","videoD25m","videoD20m","videoD15m","videoD10m"],
              ["videoG30m","videoG25m","videoG20m","videoG15m","videoG10m"], 
              ["videoM30m","videoM25m","videoM20m","videoM15m","videoM10m"]]
-
-    num_gestures = len(files)
-    num_dist = len(files[0])
-    num_points = 3
     
     vidDict = {"videoB30m":"L", "videoB25m":"R", "videoB20m":"R", "videoB15m":"L", "videoB10m":"L",
                "videoD30m":"L", "videoD25m":"R", "videoD20m":"L", "videoD15m":"R", "videoD10m":"L",
                "videoG30m":"R", "videoG25m":"L", "videoG20m":"R", "videoG15m":"L", "videoG10m":"R",
                "videoM30m":"R", "videoM25m":"R", "videoM20m":"L", "videoM15m":"R", "videoM10m":"L",}
-
     
-    (dataSetL, dataSetLR, dataSetR, 
-    dataLabelsL, dataLabelsLR, dataLabelsR,
-    testSetL, testSetLR, testSetR,
-    testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points)
-    
-    
-    
-    # ----- L -----
-    print "\nRunning classification for left arm data"
-    label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
-    title = "Learning Curves for left arm data"
-    testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title)
-    
-    # ----- LR -----
-    print "\nRunning classification for both arm data"
-    label_names = ["B","D","G","M"]
-    title = "Learning Curves for both arm data"
-    testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title)
-    
-    # ----- R -----
-    print "\nRunning classification for right arm data"
-    label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
-    title = "Learning Curves for right arm data"
-    testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title)
 
-
-
-    testLabels = np.concatenate((testLabelsL, testLabelsLR, testLabelsR))  # , dtype=[('x', int), ('y', float)]
-    testResults = np.concatenate((testResultL, testResultLR, testResultR))
+    num_gestures = len(files)
+    num_dist = len(files[0])
+    points = [6]    
     
-    # Sort by gesture, position, distance
-    testData = np.concatenate((testLabels, testResults),axis=1)  # act, pos, dist, res, conf
-    testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)
-#    testData = testLabels.copy()
-#    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
-
-
-    print "Regularly-spaced test points (", num_points, "per distance)"
-    if PLOT:
-        plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results")
-
+    for num_points in points:
+        print "\n\nRunning recognition for", num_points, "points per distance"
         
-    print "Creating random swarms"
-    # Get random order to create swarms
-#    testIdx = np.random.randint(0,30,5)
-    points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
-    print "Total possible test points (for each gesture):", points_per_gesture
-    testIdx = np.arange(points_per_gesture)
-    np.random.shuffle( testIdx )
-#    shuffleData = testData[testIdx]
-    
-    splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
-    rows = ["Gesture 1","Gesture 2","Gesture 3","Gesture 4"]
-    columns = ["Desired Mean","Actual Mean","t-value","p-value","p < 0.05?"]
-    cell_text = np.zeros((len(rows), len(columns)))
-    for i in range(num_gestures):
-        print "Gesture", i
-        # Split by gesture
-        splitResults[i] = testData[ testData[:,0]==i ]
+        (dataSetL, dataSetLR, dataSetR, 
+        dataLabelsL, dataLabelsLR, dataLabelsR,
+        testSetL, testSetLR, testSetR,
+        testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points)
         
+        
+        
+        # ----- L -----
+        print "\nRunning classification for left arm data"
+        label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
+        title = "Learning Curves for left arm data"
+        testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title)
+        
+        # ----- LR -----
+        print "\nRunning classification for both arm data"
+        label_names = ["B","D","G","M"]
+        title = "Learning Curves for both arm data"
+        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title)
+        
+        # ----- R -----
+        print "\nRunning classification for right arm data"
+        label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
+        title = "Learning Curves for right arm data"
+        testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title)
+    
+    
+    
+        testLabels = np.concatenate((testLabelsL, testLabelsLR, testLabelsR))  # , dtype=[('x', int), ('y', float)]
+        testResults = np.concatenate((testResultL, testResultLR, testResultR))
+        
+        # Sort by gesture, position, distance
+        testData = np.concatenate((testLabels, testResults),axis=1)  # act, pos, dist, res, conf
+        testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)
+    #    testData = testLabels.copy()
+    #    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
+    
+    
+        print "Regularly-spaced test points (", num_points, "per distance)"
         if PLOT:
-            plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
-        plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
+            plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results")
+    
+            
+        print "Creating random swarms"
+        # Get random order to create swarms
+    #    testIdx = np.random.randint(0,30,5)
+        points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
+        print "Total possible test points (for each gesture):", points_per_gesture
+        testIdx = np.arange(points_per_gesture)
+        np.random.shuffle( testIdx )
+    #    shuffleData = testData[testIdx]
         
-        # Hypothesis test to see if there is a significant difference
-        # Returns t, two-tailed p-val
-        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i)
-        cell_text[i] = [i, np.mean(splitResults[i][:,3]), t, p, (p<0.05)]
-        print "Desired mean:", i, "mean result:", np.mean(splitResults[i][:,3])
-        print "T-test:", t,p
+        splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
+    #    rows = ["Gesture 0","Gesture 1","Gesture 2","Gesture 3"]
+    #    columns = ["Desired Mean","Actual Mean","t-value","p-value","p < 0.05?"]
+    #    cell_text = np.zeros((len(rows), len(columns)))
         
-        # go through all possible swarms for each gesture
-#        for swarm in range(num_points):  
-        # swarms of same size already chosen so can evenly split
-        shuffleData = splitResults[i][testIdx]
-        swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
-        for idx,swarm in enumerate(swarms):
+        for i in range(num_gestures):
+            print "Gesture", i
+            # Split by gesture
+            splitResults[i] = testData[ testData[:,0]==i ]
+            
             if PLOT:
-                title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
-                print title, "\n", swarm
-                plotConfidenceCM(swarm, num_dist, num_points, title)  # Combine these into subplots!
+                plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
+                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
+            
+            # Hypothesis test to see if there is a significant difference
+            # Returns t, two-tailed p-val
+    #        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i)
+    #        cell_text[i] = [i, np.mean(splitResults[i][:,3]), t, p, (p<0.05)]
+    #        print "Desired mean:", i, "mean result:", np.mean(splitResults[i][:,3])
+    #        print "T-test:", t,p
+            
+            # go through all possible swarms for each gesture
+    #        for swarm in range(num_points):  
+            # swarms of same size already chosen so can evenly split
+            shuffleData = splitResults[i][testIdx]
+            swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
+            for idx,swarm in enumerate(swarms):
+                if PLOT:
+                    title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
+                    print title, "\n", swarm
+                    plotConfidenceCM(swarm, num_dist, num_points, title)  # Combine these into subplots!
+    
+    #    plt.figure()    
+    #    plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
+    #    plt.show()
 
-#        plt.figure()
-#        
-#        plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
-#
-#        plt.show()
 
 
-# TODO: weight gestures with 2 arms higher?
+# TODO: multiple bars for diff swarm sizes
+# TODO: sample swarms from correct/incorrect
+
