@@ -424,9 +424,10 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results",
     
     plt.figure()
     
-    if mode==1 or mode==2:
+    if mode==2:
         plt.subplot(121)
-        
+    if mode==1 or mode==2:
+                
         plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
         # Find range of values & set colorbar range around it
         plt.clim(0, cm.max())
@@ -438,9 +439,10 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results",
         plt.tight_layout()
         plt.ylabel('Distance from controller')
         plt.xlabel('Position on semicircle')
-    
-    if mode==2 or mode==3:
+        
+    if mode==2:
         plt.subplot(122)
+    if mode==2 or mode==3:
         
         plt.imshow(cm_conf, interpolation='nearest', cmap=plt.cm.RdBu)
         # Find range of values & set colorbar range around it
@@ -472,8 +474,9 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
     
     plt.figure()
     
-    if mode==1 or mode==2:
+    if mode==2:
         plt.subplot(121)
+    if mode==1 or mode==2:
         
         plt.title(title)
         plt.bar(range(num_gestures), votes)
@@ -483,8 +486,9 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
         plt.ylabel('Votes')
         plt.xlabel('Gestures')
     
-    if mode==2 or mode==3:
+    if mode==2:
         plt.subplot(122)
+    if mode==2 or mode==3:
         
         plt.title("Weighted "+title)
         plt.bar(range(num_gestures), weights)
