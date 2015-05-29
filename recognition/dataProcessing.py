@@ -402,7 +402,7 @@ def processFiles(files, vidDict, num_points):
 
 
 
-def plotResultMatrices(testData, num_dist, num_points, title="Test set results"):
+def plotResultMatrices(testData, num_dist, num_points, title="Test set results", mode=2):
     cm = np.zeros((num_dist, num_points))  # (y,x)
     cm_conf = np.zeros((num_dist, num_points))
     y_range = [1, 1.5, 2, 2.5, 3]
@@ -423,77 +423,44 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results")
     
     
     plt.figure()
-    plt.subplot(121)
     
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    # Find range of values & set colorbar range around it
-    plt.clim(0, cm.max())
+    if mode==1 or mode==2:
+        plt.subplot(121)
+        
+        plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+        # Find range of values & set colorbar range around it
+        plt.clim(0, cm.max())
+        
+        plt.title(title)
+        plt.colorbar()
+        plt.xticks(np.arange(num_points), np.arange(num_points))
+        plt.yticks(np.arange(num_dist), y_range)
+        plt.tight_layout()
+        plt.ylabel('Distance from controller')
+        plt.xlabel('Position on semicircle')
     
-    plt.title(title)
-    plt.colorbar()
-    plt.xticks(np.arange(num_points), np.arange(num_points))
-    plt.yticks(np.arange(num_dist), y_range)
-    plt.tight_layout()
-    plt.ylabel('Distance from controller')
-    plt.xlabel('Position on semicircle')
-    
-    plt.subplot(122)
-    
-    plt.imshow(cm_conf, interpolation='nearest', cmap=plt.cm.RdBu)
-    # Find range of values & set colorbar range around it
-    maxVal = max(cm_conf.max(), cm_conf.min(), key=abs)
-    plt.clim(-1*maxVal,maxVal)
-    
-    plt.title(title+" by confidence")
-    plt.colorbar()
-    plt.xticks(np.arange(num_points), np.arange(num_points))
-    plt.yticks(np.arange(num_dist), y_range)
-    plt.tight_layout()
-    plt.ylabel('Distance from controller')
-    plt.xlabel('Position on semicircle')
-    
-    plt.show()
-
-
-
-
-def plotConfidenceCM(testData, num_dist, num_points, title="Confidence results"):
-    cm = np.zeros((num_dist, num_points))  # (y,x)
-    y_range = [1, 1.5, 2, 2.5, 3]
-    input_range = range(num_dist)
-    for testPoint in testData:
-        [act,x,y,res,conf] = testPoint
-        y = int( np.interp(y, y_range, input_range) )
-        if res==act:  # Check for correct recognition
-            cm[y,x] += abs(conf)
-        else:  # Mark other robots in the swarm (incorrect rec)
-            cm[y,x] += -1*abs(conf)
-    
-    print "Confidence CM:\n", cm, "\n"
-#    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-#    print "As normalized CM:\n", cm_normalized
-    
-    
-    plt.figure()
-    
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.RdBu)
-    # Find range of values & set colorbar range around it
-    maxVal = max(cm.max(), cm.min(), key=abs)
-    plt.clim(-1*maxVal,maxVal)
-    
-    plt.title(title)
-    plt.colorbar()
-    plt.xticks(np.arange(num_points), np.arange(num_points))
-    plt.yticks(np.arange(num_dist), y_range)
-    plt.tight_layout()
-    plt.ylabel('Distance from controller')
-    plt.xlabel('Position on semicircle')
+    if mode==2 or mode==3:
+        plt.subplot(122)
+        
+        plt.imshow(cm_conf, interpolation='nearest', cmap=plt.cm.RdBu)
+        # Find range of values & set colorbar range around it
+        maxVal = max(cm_conf.max(), cm_conf.min(), key=abs)
+        plt.clim(-1*maxVal,maxVal)
+        
+        plt.title(title+" by confidence")
+        plt.colorbar()
+        plt.xticks(np.arange(num_points), np.arange(num_points))
+        plt.yticks(np.arange(num_dist), y_range)
+        plt.tight_layout()
+        plt.ylabel('Distance from controller')
+        plt.xlabel('Position on semicircle')
     
     plt.show()
 
 
 
-def plotVoteChart(gestureData, num_gestures=4, title="Vote chart"):
+
+def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
     votes = np.zeros((num_gestures,1))
     weights = np.zeros((num_gestures,1))
     for idx,testPoint in enumerate(gestureData):
@@ -504,25 +471,28 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart"):
     print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
     
     plt.figure()
-    plt.subplot(121)
     
-    plt.title(title)
-    plt.bar(range(num_gestures), votes)
-    plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
-#    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
-    plt.tight_layout()
-    plt.ylabel('Votes')
-    plt.xlabel('Gestures')
+    if mode==1 or mode==2:
+        plt.subplot(121)
+        
+        plt.title(title)
+        plt.bar(range(num_gestures), votes)
+        plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
+    #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+        plt.tight_layout()
+        plt.ylabel('Votes')
+        plt.xlabel('Gestures')
     
-    plt.subplot(122)
-    
-    plt.title("Weighted "+title)
-    plt.bar(range(num_gestures), weights)
-    plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
-#    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
-    plt.tight_layout()
-    plt.ylabel('Weighted votes')
-    plt.xlabel('Gestures')
+    if mode==2 or mode==3:
+        plt.subplot(122)
+        
+        plt.title("Weighted "+title)
+        plt.bar(range(num_gestures), weights)
+        plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
+    #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+        plt.tight_layout()
+        plt.ylabel('Weighted votes')
+        plt.xlabel('Gestures')
     
     plt.show()
 
@@ -590,7 +560,7 @@ if __name__ == "__main__":
     
         print "Regularly-spaced test points (", num_points, "per distance)"
         if PLOT:
-            plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results")
+            plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results", mode=2)
     
             
         print "Creating random swarms"
@@ -613,8 +583,8 @@ if __name__ == "__main__":
             splitResults[i] = testData[ testData[:,0]==i ]
             
             if PLOT:
-                plotConfidenceCM(splitResults[i], num_dist, num_points, title="Test set results by confidence for gesture "+str(i))
-                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i))
+                plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
+                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
             
             # Hypothesis test to see if there is a significant difference
             # Returns t, two-tailed p-val
@@ -632,7 +602,7 @@ if __name__ == "__main__":
                 if PLOT:
                     title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
                     print title, "\n", swarm
-                    plotConfidenceCM(swarm, num_dist, num_points, title)  # Combine these into subplots!
+                    plotResultMatrices(swarm, num_dist, num_points, title=title, mode=3)  # Combine these into subplots!
     
     #    plt.figure()    
     #    plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
