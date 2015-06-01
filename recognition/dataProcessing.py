@@ -11,7 +11,7 @@ from sklearn import cross_validation
 from sklearn.svm import SVC
 from sklearn.learning_curve import learning_curve
 from sklearn.metrics import confusion_matrix, classification_report
-from scipy import stats
+#from scipy import stats
 try:
    import cPickle as pickle
 except:
@@ -503,6 +503,58 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 
+def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
+    num_swarms = len(gestureData)
+    
+    for gesture in range(num_gestures):
+        title = title+str(gesture)
+        
+        for idx,swarm in enumerate(gestureData):
+            votes = np.zeros((num_swarms, num_gestures))
+            weights = np.zeros((num_swarms, num_gestures))
+        
+            for testPoint in swarm:
+                [act,x,y,res,conf] = testPoint
+                votes[idx, res] += 1
+                weights[idx, res] += conf
+        
+        print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
+        
+        
+        
+        plt.figure()
+        
+        if mode==2:
+            plt.subplot(121)
+        if mode==1 or mode==2:
+            
+            plt.title(title)
+            for idx in range(num_swarms):
+                plt.bar(range(num_gestures), votes[idx,:])
+            plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
+        #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+            plt.tight_layout()
+            plt.ylabel('Votes')
+            plt.xlabel('Gestures')
+        
+        if mode==2:
+            plt.subplot(122)
+        if mode==2 or mode==3:
+            
+            plt.title("Weighted "+title)
+            for idx in range(num_swarms):
+                plt.bar(range(num_gestures), weights[idx,:])
+            plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
+        #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+            plt.tight_layout()
+            plt.ylabel('Weighted votes')
+            plt.xlabel('Gestures')
+        
+        plt.show()
+
+
+
+
 if __name__ == "__main__":
     plt.close("all")
     np.set_printoptions(precision=2)
@@ -520,10 +572,12 @@ if __name__ == "__main__":
 
     num_gestures = len(files)
     num_dist = len(files[0])
-    points = [6]    
+    points = [6, 8]
+#    resultSet = np.zeros((len(points), num_gestures, 1, 5))
+    resultSet = []
     
     for num_points in points:
-        print "\n\nRunning recognition for", num_points, "points per distance"
+        print "\n\n----- Running recognition for", num_points, "points per distance -----"
         
         (dataSetL, dataSetLR, dataSetR, 
         dataLabelsL, dataLabelsLR, dataLabelsR,
@@ -582,11 +636,11 @@ if __name__ == "__main__":
     #    cell_text = np.zeros((len(rows), len(columns)))
         
         for i in range(num_gestures):
-            print "Gesture", i
             # Split by gesture
             splitResults[i] = testData[ testData[:,0]==i ]
             
             if PLOT:
+                print "Results for gesture", i
                 plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
                 plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
             
@@ -611,6 +665,10 @@ if __name__ == "__main__":
     #    plt.figure()    
     #    plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
     #    plt.show()
+    
+        resultSet.append(splitResults)
+        
+    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=2)
 
 
 
