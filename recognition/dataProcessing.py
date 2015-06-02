@@ -519,6 +519,14 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
                 votes[idx, res] += 1
                 weights[idx, res] += conf
         
+        
+        for idx,swarmVotes in enumerate(votes):
+            total = sum(swarmVotes)
+            total_weight = sum(weights[idx])
+            for idx2,vote in enumerate(swarmVotes):
+                votes[idx,idx2] = float(vote)/total
+                weights[idx,idx2] = float(weights[idx,idx2])/total_weight
+        
         print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
         
         
@@ -534,8 +542,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
             colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
                 plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors))
-            plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
-        #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+            plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
             plt.tight_layout()
             plt.ylabel('Votes')
             plt.xlabel('Gestures')
@@ -550,8 +557,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
             for idx in range(num_swarms):
                 plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors))
                 
-            plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
-        #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
+            plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
             plt.tight_layout()
             plt.ylabel('Weighted votes')
             plt.xlabel('Gestures')
