@@ -28,7 +28,7 @@ dataExt = ".pickle"
 
 PLOT = 0
 from matplotlib import pyplot as plt
-#    from matplotlib import cm
+from matplotlib import cm as cm
 #    from matplotlib.lines import Line2D
 
 CV = 0
@@ -117,7 +117,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     dataSet = np.array(dataSet)
     dataLabels = np.array(dataLabels)
     
-    print "Fitting classifier to data (with cross-validation)"
+    print "Fitting classifier to data"
     
     if dataSet.ndim==1:
         clf = SVC(C=0.75)
@@ -507,13 +507,14 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
     num_swarms = len(gestureData)
     
     for gesture in range(num_gestures):
-        title = title+str(gesture)
+        votes = np.zeros((num_swarms, num_gestures))
+        weights = np.zeros((num_swarms, num_gestures))
+        title2 = title+str(gesture)
+        
         
         for idx,swarm in enumerate(gestureData):
-            votes = np.zeros((num_swarms, num_gestures))
-            weights = np.zeros((num_swarms, num_gestures))
-        
-            for testPoint in swarm:
+            
+            for testPoint in swarm[gesture]:
                 [act,x,y,res,conf] = testPoint
                 votes[idx, res] += 1
                 weights[idx, res] += conf
@@ -521,16 +522,18 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
         print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
         
         
-        
         plt.figure()
+        width = 1.0/(num_swarms+1)
         
         if mode==2:
             plt.subplot(121)
         if mode==1 or mode==2:
             
-            plt.title(title)
+            plt.title(title2)
+#            colors = iter(["r", "b", "g"])
+            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
-                plt.bar(range(num_gestures), votes[idx,:])
+                plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors))
             plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
         #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
             plt.tight_layout()
@@ -541,9 +544,12 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
             plt.subplot(122)
         if mode==2 or mode==3:
             
-            plt.title("Weighted "+title)
+            plt.title("Weighted "+title2)
+            
+            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
-                plt.bar(range(num_gestures), weights[idx,:])
+                plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors))
+                
             plt.xticks(np.arange(num_gestures), np.arange(num_gestures))
         #    plt.yticks(np.arange(num_gestures), np.arange(num_gestures))
             plt.tight_layout()
@@ -572,7 +578,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)
     num_dist = len(files[0])
-    points = [6, 8]
+    points = [3,6,9]
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     
@@ -672,6 +678,6 @@ if __name__ == "__main__":
 
 
 
-# TODO: multiple bars for diff swarm sizes
+# TODO: add to vote chart - legend, count on top of each bar
 # TODO: sample swarms from correct/incorrect
 
