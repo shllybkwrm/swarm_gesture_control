@@ -504,6 +504,84 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
+    
+    # From http://matplotlib.org/examples/api/barchart_demo.html
+    def autolabel(rects):
+    # attach some text labels
+        for rect in rects:
+            height = rect.get_height()
+                
+    
+    
+    num_swarms = len(gestureData)
+    
+    for gesture in range(num_gestures):
+        print "\n--- Gesture "+str(gesture)+" ---"
+        votes = np.zeros((num_swarms, num_gestures))
+        weights = np.zeros((num_swarms, num_gestures))
+        title2 = title+str(gesture)
+        
+        
+        for idx,swarm in enumerate(gestureData):
+            
+            for testPoint in swarm[gesture]:
+                [act,x,y,res,conf] = testPoint
+                votes[idx, res] += 1
+                weights[idx, res] += conf
+        
+        
+        for idx,swarmVotes in enumerate(votes):
+            total = sum(swarmVotes)
+            total_weight = sum(weights[idx])
+            for idx2,vote in enumerate(swarmVotes):
+                votes[idx,idx2] = float(vote)/total
+                weights[idx,idx2] = float(weights[idx,idx2])/total_weight
+        
+        print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
+        
+        
+        plt.figure()
+        width = 1.0/(num_swarms+1)
+        
+        if mode==2:
+            plt.subplot(121)
+        if mode==1 or mode==2:
+            
+            plt.title(title2)
+#            colors = iter(["r", "b", "g"])
+            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+            for idx in range(num_swarms):
+                bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
+                autolabel(bars)
+            
+            plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
+            plt.tight_layout()
+            plt.ylabel('Votes')
+            plt.xlabel('Gestures')
+            plt.legend()
+        
+        if mode==2:
+            plt.subplot(122)
+        if mode==2 or mode==3:
+            
+            plt.title("Weighted "+title2)
+            
+            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+            for idx in range(num_swarms):
+                bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
+                autolabel(bars)
+                
+            plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
+            plt.tight_layout()
+            plt.ylabel('Weighted votes')
+            plt.xlabel('Gestures')
+            plt.legend()
+        
+        plt.show()
+
+
+# ----- In progress -----
+def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
     num_swarms = len(gestureData)
     
     for gesture in range(num_gestures):
@@ -584,7 +662,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)
     num_dist = len(files[0])
-    points = [3,6,9]
+    points = [3,6,9,12]
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     
@@ -680,7 +758,10 @@ if __name__ == "__main__":
     
         resultSet.append(splitResults)
         
-    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=2)
+#    if PLOT:
+    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+        
+#    constructSwarms(resultSet, num_gestures, title="Votes for gesture ", mode=3)
 
 
 
