@@ -206,7 +206,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
 
 
 
-def processFiles(files, vidDict, num_points):
+def processFiles(files, vidDict, num_points, mode="structured"):
         # should these be 1 or (1,1)?
     dataSetL = np.zeros((1,1))  # Dummy entry that needs to be removed later!
     dataSetLR = np.zeros((1,2))
@@ -275,7 +275,12 @@ def processFiles(files, vidDict, num_points):
             
             # Add to cumulative angleSet for each gesture 
             middle = len(angleSet)/2
-            interval = math.ceil( float(len(angleSet))/ num_points )  # round up so all have 6 (or num_points) points, not 7
+            points = np.arange(len(angleSet))
+            if mode=="structured":  # evenly select indices
+                interval = math.ceil( float(len(angleSet))/ num_points )  # round up so all have 6 (or num_points) points, not 7
+                points = points[points%interval==0]
+            elif mode=="random":  # get random indices
+                points = np.random.shuffle( points )[:num_points]
             dist = [int(s) for s in filename if s.isdigit()]
             dist = float(''.join(map(str,dist)))/10
             if vidDict[filename]=="R":
@@ -285,7 +290,7 @@ def processFiles(files, vidDict, num_points):
             
             for idx,angles in enumerate(angleSet):  # all angles from one gesture e.g. B30
                 if len(angles)==2:
-                    if idx % interval == 0:  # Save specific test points
+                    if idx in points:  # Save specific test points
                         testSetLR = np.append(testSetLR, [angles], axis=0)
                         testLabelsLR = np.append(testLabelsLR, np.array([[classID,count,dist]]), axis=0 )
                         if vidDict[filename]=="R":
@@ -298,7 +303,7 @@ def processFiles(files, vidDict, num_points):
                     
                 elif idx < middle:  # first half
                     if vidDict[filename]=="L":
-                        if idx % interval == 0:  # Save specific test points
+                        if idx in points:  # Save specific test points
                             testSetL = np.append(testSetL, angles)
                             testLabelsL = np.append(testLabelsL, np.array([[classID,count,dist]]), axis=0 )
                             count+=1
@@ -307,7 +312,7 @@ def processFiles(files, vidDict, num_points):
                     
                             
                     elif vidDict[filename]=="R":
-                        if idx % interval == 0:  # Save specific test points
+                        if idx in points:  # Save specific test points
                             testSetR = np.append(testSetR, angles)
                             testLabelsR = np.append(testLabelsR, np.array([[classID,count,dist]]), axis=0 )
                             count-=1
@@ -320,7 +325,7 @@ def processFiles(files, vidDict, num_points):
                     
                 else:  # second half
                     if vidDict[filename]=="L":                    
-                        if idx % interval == 0:  # Save specific test points
+                        if idx in points:  # Save specific test points
                             testSetR = np.append(testSetR, angles)
                             testLabelsR = np.append(testLabelsR, np.array([[classID,count,dist]]), axis=0 )
                             count+=1
@@ -328,7 +333,7 @@ def processFiles(files, vidDict, num_points):
                             angleSetR = np.append(angleSetR, angles)
                             
                     elif vidDict[filename]=="R":
-                        if idx % interval == 0:  # Save specific test points
+                        if idx in points:  # Save specific test points
                             testSetL = np.append(testSetL, angles)
                             testLabelsL = np.append(testLabelsL, np.array([[classID,count,dist]]), axis=0 )
                             count-=1
@@ -468,7 +473,7 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
     for idx,testPoint in enumerate(gestureData):
         [act,x,y,res,conf] = testPoint
         votes[res] += 1
-        weights[res] += conf
+        weights[res] += abs(conf)
     
     print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
     
@@ -510,6 +515,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
     # attach some text labels
         for rect in rects:
             height = rect.get_height()
+            plt.text(rect.get_x()+rect.get_width()/2., 1.01*height, '%1.2f'%height, ha='center', va='bottom')
                 
     
     
@@ -527,7 +533,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
             for testPoint in swarm[gesture]:
                 [act,x,y,res,conf] = testPoint
                 votes[idx, res] += 1
-                weights[idx, res] += conf
+                weights[idx, res] += abs(conf)
         
         
         for idx,swarmVotes in enumerate(votes):
@@ -555,10 +561,11 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
                 autolabel(bars)
             
             plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
-            plt.tight_layout()
+            plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Votes')
             plt.xlabel('Gestures')
             plt.legend()
+            plt.tight_layout()
         
         if mode==2:
             plt.subplot(122)
@@ -572,75 +579,76 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
                 autolabel(bars)
                 
             plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
-            plt.tight_layout()
+            plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Weighted votes')
             plt.xlabel('Gestures')
             plt.legend()
+            plt.tight_layout()
         
         plt.show()
 
 
 # ----- In progress -----
-def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
-    num_swarms = len(gestureData)
-    
-    for gesture in range(num_gestures):
-        votes = np.zeros((num_swarms, num_gestures))
-        weights = np.zeros((num_swarms, num_gestures))
-        title2 = title+str(gesture)
-        
-        
-        for idx,swarm in enumerate(gestureData):
-            
-            for testPoint in swarm[gesture]:
-                [act,x,y,res,conf] = testPoint
-                votes[idx, res] += 1
-                weights[idx, res] += conf
-        
-        
-        for idx,swarmVotes in enumerate(votes):
-            total = sum(swarmVotes)
-            total_weight = sum(weights[idx])
-            for idx2,vote in enumerate(swarmVotes):
-                votes[idx,idx2] = float(vote)/total
-                weights[idx,idx2] = float(weights[idx,idx2])/total_weight
-        
-        print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
-        
-        
-        plt.figure()
-        width = 1.0/(num_swarms+1)
-        
-        if mode==2:
-            plt.subplot(121)
-        if mode==1 or mode==2:
-            
-            plt.title(title2)
-#            colors = iter(["r", "b", "g"])
-            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
-            for idx in range(num_swarms):
-                plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors))
-            plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
-            plt.tight_layout()
-            plt.ylabel('Votes')
-            plt.xlabel('Gestures')
-        
-        if mode==2:
-            plt.subplot(122)
-        if mode==2 or mode==3:
-            
-            plt.title("Weighted "+title2)
-            
-            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
-            for idx in range(num_swarms):
-                plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors))
-                
-            plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
-            plt.tight_layout()
-            plt.ylabel('Weighted votes')
-            plt.xlabel('Gestures')
-        
-        plt.show()
+#def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
+#    num_swarms = len(gestureData)
+#    
+#    for gesture in range(num_gestures):
+#        votes = np.zeros((num_swarms, num_gestures))
+#        weights = np.zeros((num_swarms, num_gestures))
+#        title2 = title+str(gesture)
+#        
+#        
+#        for idx,swarm in enumerate(gestureData):
+#            
+#            for testPoint in swarm[gesture]:
+#                [act,x,y,res,conf] = testPoint
+#                votes[idx, res] += 1
+#                weights[idx, res] += conf
+#        
+#        
+#        for idx,swarmVotes in enumerate(votes):
+#            total = sum(swarmVotes)
+#            total_weight = sum(weights[idx])
+#            for idx2,vote in enumerate(swarmVotes):
+#                votes[idx,idx2] = float(vote)/total
+#                weights[idx,idx2] = float(weights[idx,idx2])/total_weight
+#        
+#        print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
+#        
+#        
+#        plt.figure()
+#        width = 1.0/(num_swarms+1)
+#        
+#        if mode==2:
+#            plt.subplot(121)
+#        if mode==1 or mode==2:
+#            
+#            plt.title(title2)
+##            colors = iter(["r", "b", "g"])
+#            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+#            for idx in range(num_swarms):
+#                plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors))
+#            plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
+#            plt.tight_layout()
+#            plt.ylabel('Votes')
+#            plt.xlabel('Gestures')
+#        
+#        if mode==2:
+#            plt.subplot(122)
+#        if mode==2 or mode==3:
+#            
+#            plt.title("Weighted "+title2)
+#            
+#            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+#            for idx in range(num_swarms):
+#                plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors))
+#                
+#            plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
+#            plt.tight_layout()
+#            plt.ylabel('Weighted votes')
+#            plt.xlabel('Gestures')
+#        
+#        plt.show()
 
 
 
@@ -672,7 +680,7 @@ if __name__ == "__main__":
         (dataSetL, dataSetLR, dataSetR, 
         dataLabelsL, dataLabelsLR, dataLabelsR,
         testSetL, testSetLR, testSetR,
-        testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points)
+        testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode="random")
         
         
         
