@@ -198,7 +198,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         plot_confusion_matrix(cm_normalized, label_names)
         plt.show()
     
-    print classification_report(testLabels[:,0], predictions, target_names=label_names)
+#    print classification_report(testLabels[:,0], predictions, target_names=label_names)
     
 #    testLabels = np.append(testLabels, predictions, axis=1)
     return np.concatenate((predictions.reshape(-1,1).astype(int), confidence.max(axis=1).reshape(-1,1)), axis=1)
@@ -279,8 +279,9 @@ def processFiles(files, vidDict, num_points, mode="structured"):
             if mode=="structured":  # evenly select indices
                 interval = math.ceil( float(len(angleSet))/ num_points )  # round up so all have 6 (or num_points) points, not 7
                 points = points[points%interval==0]
-            elif mode=="random":  # get random indices
-                points = np.random.shuffle( points )[:num_points]
+            elif mode=="random" or mode=="semi_random":  # get random indices
+                np.random.shuffle( points )
+                points = points[:num_points]
             dist = [int(s) for s in filename if s.isdigit()]
             dist = float(''.join(map(str,dist)))/10
             if vidDict[filename]=="R":
@@ -528,12 +529,12 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
         title2 = title+str(gesture)
         
         
-        for idx,swarm in enumerate(gestureData):
+        for swarmID,swarm in enumerate(gestureData):
             
             for testPoint in swarm[gesture]:
                 [act,x,y,res,conf] = testPoint
-                votes[idx, res] += 1
-                weights[idx, res] += abs(conf)
+                votes[swarmID, res] += 1
+                weights[swarmID, res] += abs(conf)
         
         
         for idx,swarmVotes in enumerate(votes):
@@ -589,23 +590,30 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 # ----- In progress -----
-#def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
-#    num_swarms = len(gestureData)
-#    
-#    for gesture in range(num_gestures):
+def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
+    num_swarms = len(gestureData)
+    
+    for gesture in range(num_gestures):
 #        votes = np.zeros((num_swarms, num_gestures))
 #        weights = np.zeros((num_swarms, num_gestures))
 #        title2 = title+str(gesture)
-#        
-#        
-#        for idx,swarm in enumerate(gestureData):
-#            
+        correct = []
+        incorrect = []
+        
+        
+        for swarmID,swarm in enumerate(gestureData):
+            swarm[gesture][ swarm[gesture][:][0] == swarm[gesture][:][3] ]
+            correct = [ True if act==res for [act,x,y,res,conf]=testPoint in swarm[gesture] ]
 #            for testPoint in swarm[gesture]:
 #                [act,x,y,res,conf] = testPoint
-#                votes[idx, res] += 1
-#                weights[idx, res] += conf
-#        
-#        
+#                if act==res:
+#                    correct.append(testPoint)
+#                else:
+#                    incorrect.append(testPoint)
+#                votes[swarmID, res] += 1
+#                weights[swarmID, res] += conf
+        
+        
 #        for idx,swarmVotes in enumerate(votes):
 #            total = sum(swarmVotes)
 #            total_weight = sum(weights[idx])
@@ -668,11 +676,12 @@ if __name__ == "__main__":
                "videoM30m":"R", "videoM25m":"R", "videoM20m":"L", "videoM15m":"R", "videoM10m":"L",}
     
 
-    num_gestures = len(files)
-    num_dist = len(files[0])
-    points = [3,6,9,12]
+    num_gestures = len(files)  # 4
+    num_dist = len(files[0])  # 5
+    points = [6]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
+    testMode = "semi_random"
     
     for num_points in points:
         print "\n\n----- Running recognition for", num_points, "points per distance -----"
@@ -680,7 +689,7 @@ if __name__ == "__main__":
         (dataSetL, dataSetLR, dataSetR, 
         dataLabelsL, dataLabelsLR, dataLabelsR,
         testSetL, testSetLR, testSetR,
-        testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode="random")
+        testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode=testMode)
         
         
         
@@ -719,7 +728,7 @@ if __name__ == "__main__":
             plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results", mode=2)
     
             
-        print "Creating random swarms"
+        print "Saving / sorting results by gesture"
         # Get random order to create swarms
     #    testIdx = np.random.randint(0,30,5)
         points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
@@ -752,13 +761,13 @@ if __name__ == "__main__":
             # go through all possible swarms for each gesture
     #        for swarm in range(num_points):  
             # swarms of same size already chosen so can evenly split
-            shuffleData = splitResults[i][testIdx]
-            swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
-            for idx,swarm in enumerate(swarms):
-                if PLOT:
-                    title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
-                    print title, "\n", swarm
-                    plotResultMatrices(swarm, num_dist, num_points, title=title, mode=3)  # Combine these into subplots!
+#            shuffleData = splitResults[i][testIdx]
+#            swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
+#            for idx,swarm in enumerate(swarms):
+#                if PLOT:
+#                    title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
+#                    print title, "\n", swarm
+#                    plotResultMatrices(swarm, num_dist, num_points, title=title, mode=3)  # Combine these into subplots!
     
     #    plt.figure()    
     #    plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
@@ -766,10 +775,11 @@ if __name__ == "__main__":
     
         resultSet.append(splitResults)
         
-#    if PLOT:
-    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
-        
-#    constructSwarms(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+    if PLOT:
+        plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+    
+    if testMode=="semi_random":
+        constructSwarms(resultSet, num_gestures, title="Votes for gesture ", mode=3)
 
 
 
