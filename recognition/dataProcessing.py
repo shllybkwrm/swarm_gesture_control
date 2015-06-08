@@ -603,7 +603,8 @@ def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
         
         for swarmID,swarm in enumerate(gestureData):
             swarm[gesture][ swarm[gesture][:][0] == swarm[gesture][:][3] ]
-            correct = [ True if act==res for [act,x,y,res,conf]=testPoint in swarm[gesture] ]
+            correct = [ testPoint for testPoint in swarm[gesture] if testPoint[0]==testPoint[3] ]  # for [act,x,y,res,conf] in testPoint
+            incorrect = [ testPoint for testPoint in swarm[gesture] if testPoint[0]!=testPoint[3] ]
 #            for testPoint in swarm[gesture]:
 #                [act,x,y,res,conf] = testPoint
 #                if act==res:
@@ -612,8 +613,8 @@ def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
 #                    incorrect.append(testPoint)
 #                votes[swarmID, res] += 1
 #                weights[swarmID, res] += conf
-        
-        
+#        
+#        
 #        for idx,swarmVotes in enumerate(votes):
 #            total = sum(swarmVotes)
 #            total_weight = sum(weights[idx])
