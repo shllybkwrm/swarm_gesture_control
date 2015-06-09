@@ -10,7 +10,7 @@ import numpy as np
 from sklearn import cross_validation
 from sklearn.svm import SVC
 from sklearn.learning_curve import learning_curve
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix#, classification_report
 #from scipy import stats
 try:
    import cPickle as pickle
@@ -590,42 +590,42 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 # ----- In progress -----
-def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
+def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
     num_swarms = len(gestureData)
+    returnData = []
     
-    for gesture in range(num_gestures):
 #        votes = np.zeros((num_swarms, num_gestures))
 #        weights = np.zeros((num_swarms, num_gestures))
 #        title2 = title+str(gesture)
+        
+        
+    for swarmID,swarm in enumerate(gestureData):
         correct = []
         incorrect = []
+        dataByGesture = []
         
+        for gesture in range(num_gestures):
         
-        for swarmID,swarm in enumerate(gestureData):
             swarm[gesture][ swarm[gesture][:][0] == swarm[gesture][:][3] ]
             correct = [ testPoint for testPoint in swarm[gesture] if testPoint[0]==testPoint[3] ]  # for [act,x,y,res,conf] in testPoint
             incorrect = [ testPoint for testPoint in swarm[gesture] if testPoint[0]!=testPoint[3] ]
 #            for testPoint in swarm[gesture]:
 #                [act,x,y,res,conf] = testPoint
-#                if act==res:
-#                    correct.append(testPoint)
-#                else:
-#                    incorrect.append(testPoint)
-#                votes[swarmID, res] += 1
-#                weights[swarmID, res] += conf
-        
-            points_corr = np.arange(len(correct))
-            np.random.shuffle( points_corr )
-            points_inc = np.arange(len(incorrect))
-            np.random.shuffle( points_inc )
-            for i in range(10):
+            
+            new_size = len(incorrect)
+            np.random.shuffle( correct )
+            np.random.shuffle( incorrect )
+            newSwarms = []
+            for i in range(1, new_size):
 #                ratio = float(i)*0.1
-                ratio = i * ( len(incorrect)/10 )
-                # TODO:  How to decide actual swarm size?
-                # Always use all correct robots, vary amount of incorrect?  Or v.v.
-                
+#                ratio = i * ( len(incorrect)/10 )
+                newSwarms.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
+            dataByGesture.append(newSwarms)
+#        singleSwarmData.append(singleGestureData)
+        returnData.append(dataByGesture)
         
-        
+    
+    return returnData
         
 #        for idx,swarmVotes in enumerate(votes):
 #            total = sum(swarmVotes)
@@ -691,7 +691,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [10]  # Total size will be num*num_dist
+    points = [15]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     testMode = "semi_random"
@@ -792,10 +792,10 @@ if __name__ == "__main__":
         plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
     
     if testMode=="semi_random":
-        constructSwarms(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+        testSwarms = constructSwarms(resultSet, num_gestures)
 
 
 
-# TODO: add to vote chart - legend, count on top of each bar
 # TODO: sample swarms from correct/incorrect
+# TODO: add location plot
 
