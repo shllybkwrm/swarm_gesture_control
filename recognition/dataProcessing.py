@@ -613,8 +613,20 @@ def constructSwarms(gestureData, num_gestures, title="Vote chart", mode=2):
 #                    incorrect.append(testPoint)
 #                votes[swarmID, res] += 1
 #                weights[swarmID, res] += conf
-#        
-#        
+        
+            points_corr = np.arange(len(correct))
+            np.random.shuffle( points_corr )
+            points_inc = np.arange(len(incorrect))
+            np.random.shuffle( points_inc )
+            for i in range(10):
+#                ratio = float(i)*0.1
+                ratio = i * ( len(incorrect)/10 )
+                # TODO:  How to decide actual swarm size?
+                # Always use all correct robots, vary amount of incorrect?  Or v.v.
+                
+        
+        
+        
 #        for idx,swarmVotes in enumerate(votes):
 #            total = sum(swarmVotes)
 #            total_weight = sum(weights[idx])
@@ -679,7 +691,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [6]  # Total size will be num*num_dist
+    points = [10]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     testMode = "semi_random"
