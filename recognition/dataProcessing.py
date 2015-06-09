@@ -591,12 +591,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 # ----- In progress -----
 def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
-    num_swarms = len(gestureData)
+#    num_swarms = len(gestureData)
     returnData = []
-    
-#        votes = np.zeros((num_swarms, num_gestures))
-#        weights = np.zeros((num_swarms, num_gestures))
-#        title2 = title+str(gesture)
         
         
     for swarmID,swarm in enumerate(gestureData):
@@ -619,8 +615,9 @@ def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
             for i in range(1, new_size):
 #                ratio = float(i)*0.1
 #                ratio = i * ( len(incorrect)/10 )
-                newSwarms.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
-            dataByGesture.append(newSwarms)
+#                newSwarms.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
+#                dataByGesture.append(newSwarms)
+                dataByGesture.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
 #        singleSwarmData.append(singleGestureData)
         returnData.append(dataByGesture)
         
@@ -793,6 +790,7 @@ if __name__ == "__main__":
     
     if testMode=="semi_random":
         testSwarms = constructSwarms(resultSet, num_gestures)
+        plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3)
 
 
 
