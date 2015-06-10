@@ -279,13 +279,13 @@ def processFiles(files, vidDict, num_points, mode="structured"):
             if mode=="structured":  # evenly select indices
                 interval = math.ceil( float(len(angleSet))/ num_points )  # round up so all have 6 (or num_points) points, not 7
                 points = points[points%interval==0]
-            elif mode=="random" or mode=="semi_random":  # get random indices
+            elif mode=="random" or mode=="semi-random":  # get random indices
                 np.random.shuffle( points )
                 points = points[:num_points]
             dist = [int(s) for s in filename if s.isdigit()]
             dist = float(''.join(map(str,dist)))/10
             if vidDict[filename]=="R":
-                count=5
+                count=num_points-1
             else:
                 count=0            
             
@@ -643,7 +643,7 @@ def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
             np.random.shuffle( correct )
             np.random.shuffle( incorrect )
             newSwarms = []
-            for i in range(1, new_size-1):
+            for i in range(1, new_size):
 #                ratio = float(i)*0.1
 #                ratio = i * ( len(incorrect)/10 )
                 newSwarms.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
@@ -652,7 +652,8 @@ def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
 #        singleSwarmData.append(singleGestureData)
 #        returnData.append(dataByGesture)
         returnData = dataByGesture
-        # TODO:  Differentiate between original swarms?
+        
+        # TODO:  Differentiate between original swarms, Account for randomness
         
     
     return returnData
@@ -724,7 +725,8 @@ if __name__ == "__main__":
     points = [15]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
-    testMode = "semi_random"
+    # Test modes: structured, random, semi-random
+    testMode = "semi-random"  # points should be length 1 if using semi-random
     
     for num_points in points:
         print "\n\n----- Running recognition for", num_points, "points per distance -----"
@@ -789,9 +791,9 @@ if __name__ == "__main__":
             # Split by gesture
             splitResults[i] = testData[ testData[:,0]==i ]
             
+            plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
             if PLOT:
                 print "Results for gesture", i
-                plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
                 plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
             
             # Hypothesis test to see if there is a significant difference
@@ -821,12 +823,17 @@ if __name__ == "__main__":
     if PLOT:
         plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
     
-    if testMode=="semi_random":
+    
+    if testMode=="semi-random":
         testSwarms = constructSwarms(resultSet, num_gestures)
-        plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3, flag="semi-random")
+        if PLOT: 
+            plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3, flag=testMode)
+#            for i in range(num_gestures):
+#                plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
 
 
 
-# TODO: sample swarms from correct/incorrect
-# TODO: add location plot
+# TODO: account for randomness of swarms
+# TODO: sort swarm by conf?
+
 
