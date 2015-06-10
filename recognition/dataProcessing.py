@@ -509,7 +509,7 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 
-def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
+def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, flag="default"):
     
     # From http://matplotlib.org/examples/api/barchart_demo.html
     def autolabel(rects):
@@ -520,21 +520,41 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
                 
     
     
-    num_swarms = len(gestureData)
-    
     for gesture in range(num_gestures):
         print "\n--- Gesture "+str(gesture)+" ---"
-        votes = np.zeros((num_swarms, num_gestures))
-        weights = np.zeros((num_swarms, num_gestures))
-        title2 = title+str(gesture)
         
         
-        for swarmID,swarm in enumerate(gestureData):
+        
+        if flag=="semi-random":
+            num_swarms = len(gestureData[gesture])
+        
+            votes = np.zeros((num_swarms, num_gestures))
+            weights = np.zeros((num_swarms, num_gestures))
+            title2 = title+str(gesture)
+                
+            # w/ new construction, swarms are already divided by gesture
+            for swarmID,swarm in enumerate(gestureData[gesture]):
+                
+                for testPoint in swarm:
+                    [act,x,y,res,conf] = testPoint
+                    votes[swarmID, res] += 1
+                    weights[swarmID, res] += abs(conf)
             
-            for testPoint in swarm[gesture]:
-                [act,x,y,res,conf] = testPoint
-                votes[swarmID, res] += 1
-                weights[swarmID, res] += abs(conf)
+            
+        else:
+            num_swarms = len(gestureData)
+        
+            votes = np.zeros((num_swarms, num_gestures))
+            weights = np.zeros((num_swarms, num_gestures))
+            title2 = title+str(gesture)
+            
+            for swarmID,swarm in enumerate(gestureData):
+                
+                for testPoint in swarm[gesture]:
+                    [act,x,y,res,conf] = testPoint
+                    votes[swarmID, res] += 1
+                    weights[swarmID, res] += abs(conf)
+        
         
         
         for idx,swarmVotes in enumerate(votes):
@@ -544,7 +564,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
                 votes[idx,idx2] = float(vote)/total
                 weights[idx,idx2] = float(weights[idx,idx2])/total_weight
         
-        print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
+        
+        
         
         
         plt.figure()
@@ -553,43 +574,54 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
         if mode==2:
             plt.subplot(121)
         if mode==1 or mode==2:
+            print "Votes:\n", votes, "\n"
             
             plt.title(title2)
 #            colors = iter(["r", "b", "g"])
             colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
-                bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
+                if flag=="semi-random":
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[gesture][idx])) )
+                else:
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
             
             plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Votes')
             plt.xlabel('Gestures')
-            plt.legend()
+            if flag!="semi-random":
+                plt.legend()
             plt.tight_layout()
         
         if mode==2:
             plt.subplot(122)
         if mode==2 or mode==3:
+            print "Weighted votes:\n", weights, "\n"
             
             plt.title("Weighted "+title2)
             
             colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
-                bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
+                if flag=="semi-random":
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[gesture][idx])) )
+                else:
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
                 
             plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Weighted votes')
             plt.xlabel('Gestures')
-            plt.legend()
+            if flag!="semi-random":
+                plt.legend()
             plt.tight_layout()
         
         plt.show()
 
 
-# ----- In progress -----
+
+
 def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
 #    num_swarms = len(gestureData)
     returnData = []
@@ -602,7 +634,6 @@ def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
         
         for gesture in range(num_gestures):
         
-            swarm[gesture][ swarm[gesture][:][0] == swarm[gesture][:][3] ]
             correct = [ testPoint for testPoint in swarm[gesture] if testPoint[0]==testPoint[3] ]  # for [act,x,y,res,conf] in testPoint
             incorrect = [ testPoint for testPoint in swarm[gesture] if testPoint[0]!=testPoint[3] ]
 #            for testPoint in swarm[gesture]:
@@ -612,14 +643,16 @@ def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
             np.random.shuffle( correct )
             np.random.shuffle( incorrect )
             newSwarms = []
-            for i in range(1, new_size):
+            for i in range(1, new_size-1):
 #                ratio = float(i)*0.1
 #                ratio = i * ( len(incorrect)/10 )
-#                newSwarms.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
-#                dataByGesture.append(newSwarms)
-                dataByGesture.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
+                newSwarms.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
+#                dataByGesture.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
+            dataByGesture.append(newSwarms)
 #        singleSwarmData.append(singleGestureData)
-        returnData.append(dataByGesture)
+#        returnData.append(dataByGesture)
+        returnData = dataByGesture
+        # TODO:  Differentiate between original swarms?
         
     
     return returnData
@@ -790,7 +823,7 @@ if __name__ == "__main__":
     
     if testMode=="semi_random":
         testSwarms = constructSwarms(resultSet, num_gestures)
-        plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3)
+        plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3, flag="semi-random")
 
 
 
