@@ -11,7 +11,8 @@ from sklearn import cross_validation
 from sklearn.svm import SVC
 from sklearn.learning_curve import learning_curve
 from sklearn.metrics import confusion_matrix#, classification_report
-#from scipy import stats
+from scipy import stats
+import itertools
 try:
    import cPickle as pickle
 except:
@@ -555,21 +556,28 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                     votes[swarmID, res] += 1
                     weights[swarmID, res] += abs(conf)
         
+            print "--- Running t-test for swarm", swarmID, "---"
+            max(set(lst), key=lst.count)
+            swarm_votes.sort()
+            swarm_weights.sort()
+            (t, p) = stats.ttest_ind(swarm_weights[-1], swarm_weights[-2])
         
         
-        for idx,swarmVotes in enumerate(votes):
-            total = sum(swarmVotes)
-            total_weight = sum(weights[idx])
-            for idx2,vote in enumerate(swarmVotes):
+        
+        for idx,swarm_votes in enumerate(votes):
+            swarm_weights = weights[idx]
+            total = sum(swarm_votes)
+            total_weight = sum(swarm_weights)
+            
+            for idx2,vote in enumerate(swarm_votes):
+                weight = swarm_weights[idx2]
                 votes[idx,idx2] = float(vote)/total
-                weights[idx,idx2] = float(weights[idx,idx2])/total_weight
-        
-        
+                weights[idx,idx2] = float(weight)/total_weight
         
         
         
         plt.figure()
-        width = 1.0/(num_swarms+1)
+        width = 1.0/(num_swarms+1)  # extra space for between gesture groups
         
         if mode==2:
             plt.subplot(121)
@@ -622,7 +630,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
 
 
 
-def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
+def constructSwarms(gestureData, num_gestures, mode="rand"):#, title="Vote chart", mode=2):
 #    num_swarms = len(gestureData)
     returnData = []
         
@@ -634,15 +642,22 @@ def constructSwarms(gestureData, num_gestures):#, title="Vote chart", mode=2):
         
         for gesture in range(num_gestures):
         
-            correct = [ testPoint for testPoint in swarm[gesture] if testPoint[0]==testPoint[3] ]  # for [act,x,y,res,conf] in testPoint
-            incorrect = [ testPoint for testPoint in swarm[gesture] if testPoint[0]!=testPoint[3] ]
+            correct = np.array ( [ testPoint for testPoint in swarm[gesture] if testPoint[0]==testPoint[3] ] )  # for [act,x,y,res,conf] in testPoint
+            incorrect = np.array( [ testPoint for testPoint in swarm[gesture] if testPoint[0]!=testPoint[3] ] )
 #            for testPoint in swarm[gesture]:
 #                [act,x,y,res,conf] = testPoint
             
             new_size = len(incorrect)
-            np.random.shuffle( correct )
-            np.random.shuffle( incorrect )
+            if mode=="rand":
+                np.random.shuffle( correct )
+                np.random.shuffle( incorrect )
+            else:  # sort by conf (inc)
+                correct.view('i8,i8,f8,i8,f8').sort(order=['f4'], axis=0)
+                incorrect.view('i8,i8,f8,i8,f8').sort(order=['f4'], axis=0)
             newSwarms = []
+            # print list(itertools.combinations([1,2,3], 2))
+            # print list(itertools.product([0,1], repeat=2))
+            # temp=list(itertools.product(swarm[gesture], repeat=2))
             for i in range(1, new_size):
 #                ratio = float(i)*0.1
 #                ratio = i * ( len(incorrect)/10 )
@@ -722,7 +737,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [15]  # Total size will be num*num_dist
+    points = [5]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     # Test modes: structured, random, semi-random
@@ -791,9 +806,9 @@ if __name__ == "__main__":
             # Split by gesture
             splitResults[i] = testData[ testData[:,0]==i ]
             
-            plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
             if PLOT:
                 print "Results for gesture", i
+                plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
                 plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
             
             # Hypothesis test to see if there is a significant difference
@@ -820,14 +835,14 @@ if __name__ == "__main__":
     
         resultSet.append(splitResults)
         
-    if PLOT:
-        plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+#    if PLOT:
+    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
     
     
     if testMode=="semi-random":
-        testSwarms = constructSwarms(resultSet, num_gestures)
-        if PLOT: 
-            plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3, flag=testMode)
+        testSwarms = constructSwarms(resultSet, num_gestures, mode="notrand")
+#        plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3, flag=testMode)
+#        if PLOT: 
 #            for i in range(num_gestures):
 #                plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
 
