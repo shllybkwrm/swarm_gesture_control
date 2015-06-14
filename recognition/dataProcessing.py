@@ -525,42 +525,36 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         print "\n--- Gesture "+str(gesture)+" ---"
         
         
-        
         if flag=="semi-random":
             num_swarms = len(gestureData[gesture])
-        
-            votes = np.zeros((num_swarms, num_gestures))
-            weights = np.zeros((num_swarms, num_gestures))
-            title2 = title+str(gesture)
-                
-            # w/ new construction, swarms are already divided by gesture
-            for swarmID,swarm in enumerate(gestureData[gesture]):
-                
-                for testPoint in swarm:
-                    [act,x,y,res,conf] = testPoint
-                    votes[swarmID, res] += 1
-                    weights[swarmID, res] += abs(conf)
-            
-            
+            gestureData = gestureData[gesture]
         else:
             num_swarms = len(gestureData)
-        
-            votes = np.zeros((num_swarms, num_gestures))
-            weights = np.zeros((num_swarms, num_gestures))
-            title2 = title+str(gesture)
             
-            for swarmID,swarm in enumerate(gestureData):
+        
+        votes = np.zeros((num_swarms, num_gestures))
+        weights = np.zeros((num_swarms, num_gestures))
+        title2 = title+str(gesture)
+            
+        # w/ new construction, swarms are already divided by gesture
+        for swarmID,swarm in enumerate(gestureData):
+            if flag!="semi-random":
+                swarm = swarm[gesture]
+            # Sort by vote
+#            swarm.view('i8,i8,f8,i8,f8').sort(order=['f3'], axis=0)
                 
-                for testPoint in swarm[gesture]:
-                    [act,x,y,res,conf] = testPoint
-                    votes[swarmID, res] += 1
-                    weights[swarmID, res] += abs(conf)
+            for testPoint in swarm:
+                [act,x,y,res,conf] = testPoint
+                votes[swarmID, res] += 1
+                weights[swarmID, res] += abs(conf)
         
             print "--- Running t-test for swarm", swarmID, "---"
-            max(set(lst), key=lst.count)
-            swarm_votes.sort()
-            swarm_weights.sort()
-            (t, p) = stats.ttest_ind(swarm_weights[-1], swarm_weights[-2])
+            second_best = weights[swarmID].copy()
+            second_best.sort()
+            second_best = np.where( weights[swarmID]==second_best[-2] )[0][0]  # Output as tuple of arrays
+            (t, p) = stats.ttest_ind(swarm[ swarm[:,3]==gesture ][:,4], swarm[ swarm[:,3]==second_best ][:,4])
+            print "(t, p)", t,p
+        
         
         
         
