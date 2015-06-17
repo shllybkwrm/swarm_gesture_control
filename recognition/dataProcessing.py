@@ -511,6 +511,10 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, flag="default"):
+#    if flag=="semi-random" and len(gestureData[0])>1:
+#        print "ERROR:  Plot function not set up for more than 1 *actual* swarm."
+    
+    
     
     # From http://matplotlib.org/examples/api/barchart_demo.html
     def autolabel(rects):
@@ -549,13 +553,22 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 votes[swarmID, res] += 1
                 weights[swarmID, res] += abs(conf)
         
-            print "--- Running t-test for swarm", swarmID, "---"
-            second_best = weights[swarmID].copy()
-            second_best.sort()
-            # Fix this for when correct gesture is NOT most voted for
-            second_best = np.where( weights[swarmID]==second_best[-2] )[0][0]  # Output as tuple of arrays
-            (t, p) = stats.ttest_ind(swarm[ swarm[:,3]==gesture ][:,4], swarm[ swarm[:,3]==second_best ][:,4])
-            print "(t, p)", t,p
+        
+            # --- Evaluating confidence in overall results ---
+            copy = weights[swarmID].copy()
+            copy.sort()
+            best_idx = np.where( weights[swarmID]==copy[-1] )[0][0]  # Output as tuple of arrays
+            secondBest_idx = np.where( weights[swarmID]==copy[-2] )[0][0]
+            best = swarm[ swarm[:,3]==best_idx ][:,4]
+            secondBest = swarm[ swarm[:,3]==secondBest_idx ][:,4]
+        
+            if len(swarm)>=20:
+                (t, p) = stats.ttest_ind(best, secondBest)
+                print "t-test for swarm", swarmID, ":", (t,p)
+                
+            else:
+                percentDiff = 100*abs( weights[swarmID, best_idx] - weights[swarmID, secondBest_idx] ) / np.mean( [weights[swarmID, best_idx], weights[swarmID, secondBest_idx]] )
+                print "Percent difference for swarm", swarmID, ":", percentDiff
         
         
         
@@ -779,12 +792,12 @@ if __name__ == "__main__":
     #    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
     
     
-        print "Regularly-spaced test points (", num_points, "per distance)"
+        print  num_points, "test points per distance"
         if PLOT:
             plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results", mode=2)
     
             
-        print "Saving / sorting results by gesture"
+#        print "Saving / sorting results by gesture"
         # Get random order to create swarms
     #    testIdx = np.random.randint(0,30,5)
         points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
