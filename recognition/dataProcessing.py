@@ -198,7 +198,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     # Apparently xval doesn't return fitted SVM?  Fit again
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
     confidence = clf.decision_function(testSet).max(axis=1).reshape(-1,1)  # higher is better
-    if mode==3:
+    if mode==3 and dataSet.ndim==1:
         confidence = [conf*weight[pred] for (conf,pred) in zip(confidence, predictions)]
     else:
         confidence = confidence * weight
