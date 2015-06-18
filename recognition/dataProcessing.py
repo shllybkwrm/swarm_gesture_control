@@ -199,7 +199,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
     confidence = clf.decision_function(testSet).max(axis=1).reshape(-1,1)  # higher is better
     if mode==3:
-        confidence = [conf*weight[pred] for (conf,pred) in (confidence, predictions)]
+        confidence = [conf*weight[pred] for (conf,pred) in zip(confidence, predictions)]
     else:
         confidence = confidence * weight
 #    print "Uncertainty (in dist to separator) is:\n", confidence
