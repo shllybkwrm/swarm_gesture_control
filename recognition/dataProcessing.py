@@ -114,21 +114,35 @@ def plot_confusion_matrix(cm, target_names, title='Confusion matrix', cmap=plt.c
 
 
 
-def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Learning Curves" ):
+def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Learning Curves", mode = 1 ):
+    """
+    Modes:
+        1:  no weighting
+        2:  2 arms -> double weight
+        3:  single arm -> less weight depending on choices
+    """
     dataSet = np.array(dataSet)
     dataLabels = np.array(dataLabels)
     
     print "Fitting classifier to data"
     
-    if dataSet.ndim==1:
+    if dataSet.ndim==1:  # Single arm data
         clf = SVC(C=0.75)
         dataSet = dataSet.reshape(-1, 1)
         testSet = testSet.reshape(-1, 1)
-        weight = 1
+        if mode==1 or mode==2:
+            weight = 1
+        elif mode==3:
+            weight = np.zeros((len(label_names)))
+            for idx,name in enumerate(label_names):
+                weight[idx] = 1.0/len(name)
         
-    else:
+    else:  # 2 arm data
         clf = SVC(C=1.0)
-        weight = 2
+        if mode==1 or mode==3:
+            weight = 1
+        elif mode==2:
+            weight = 2
     
 #        X_train, X_test, y_train, y_test = cross_validation.train_test_split(dataSet, dataLabels, test_size=0.1, random_state=0)
 #        clf.fit(X_train, y_train)
@@ -183,7 +197,11 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     
     # Apparently xval doesn't return fitted SVM?  Fit again
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
-    confidence = weight * clf.decision_function(testSet)  # higher is better
+    confidence = clf.decision_function(testSet).max(axis=1).reshape(-1,1)  # higher is better
+    if mode==3:
+        confidence = [conf*weight[pred] for (conf,pred) in (confidence, predictions)]
+    else:
+        confidence = confidence * weight
 #    print "Uncertainty (in dist to separator) is:\n", confidence
 #    print "Predictions are:\n", predictions
 #    print "Expected:\n", testLabels[:,0]
@@ -202,12 +220,18 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
 #    print classification_report(testLabels[:,0], predictions, target_names=label_names)
     
 #    testLabels = np.append(testLabels, predictions, axis=1)
-    return np.concatenate((predictions.reshape(-1,1).astype(int), confidence.max(axis=1).reshape(-1,1)), axis=1)
+    return np.concatenate((predictions.reshape(-1,1).astype(int), confidence), axis=1)
      
 
 
 
 def processFiles(files, vidDict, num_points, mode="structured"):
+    """
+    Modes:
+        structured:  evenly spaced across all data
+        random:  as advertised
+        semi-random:  same as random (for now)
+    """
         # should these be 1 or (1,1)?
     dataSetL = np.zeros((1,1))  # Dummy entry that needs to be removed later!
     dataSetLR = np.zeros((1,2))
@@ -410,6 +434,12 @@ def processFiles(files, vidDict, num_points, mode="structured"):
 
 
 def plotResultMatrices(testData, num_dist, num_points, title="Test set results", mode=2):
+    """
+    Modes:
+        1:  plot only votes without weighting
+        2:  both
+        3:  plot only weighted votes
+    """
     cm = np.zeros((num_dist, num_points))  # (y,x)
     cm_conf = np.zeros((num_dist, num_points))
     y_range = [1, 1.5, 2, 2.5, 3]
@@ -470,6 +500,12 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results",
 
 
 def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
+    """
+    Modes:
+        1:  plot only votes without weighting
+        2:  both
+        3:  plot only weighted votes
+    """
     votes = np.zeros((num_gestures,1))
     weights = np.zeros((num_gestures,1))
     for idx,testPoint in enumerate(gestureData):
@@ -511,6 +547,12 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, flag="default"):
+    """
+    Modes:
+        1:  plot only votes without weighting
+        2:  both
+        3:  plot only weighted votes
+    """
 #    if flag=="semi-random" and len(gestureData[0])>1:
 #        print "ERROR:  Plot function not set up for more than 1 *actual* swarm."
     
@@ -567,7 +609,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 print "t-test for swarm", swarmID, ":", (t,p)
                 
             else:
-                percentDiff = 100*abs( weights[swarmID, best_idx] - weights[swarmID, secondBest_idx] ) / np.mean( [weights[swarmID, best_idx], weights[swarmID, secondBest_idx]] )
+                percentDiff = 100 * weights[swarmID, best_idx] - weights[swarmID, secondBest_idx] / np.mean( [weights[swarmID, best_idx], weights[swarmID, secondBest_idx]] )
                 print "Percent difference for swarm", swarmID, ":", percentDiff
         
         
@@ -640,6 +682,11 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
 
 
 def constructSwarms(gestureData, num_gestures, mode="rand"):#, title="Vote chart", mode=2):
+    """
+    Modes:
+        rand:  robots selected in random order
+        notrand [anything else]:  robots are ordered by confidence
+    """
 #    num_swarms = len(gestureData)
     returnData = []
         
@@ -749,8 +796,8 @@ if __name__ == "__main__":
     points = [10]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
-    # Test modes: structured, random, semi-random
-    testMode = "semi-random"  # points should be length 1 if using semi-random
+    # Poss test modes: structured, random, semi-random
+    testMode = "structured"  # points should be length 1 if using semi-random
     
     for num_points in points:
         print "\n\n----- Running recognition for", num_points, "points per distance -----"
@@ -760,25 +807,28 @@ if __name__ == "__main__":
         testSetL, testSetLR, testSetR,
         testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode=testMode)
         
-        
+        # modes:  1=no weight on votes, 2=double weight on 2-arm votes, 3=less weight on 1-arm votes
+        mode = 3
         
         # ----- L -----
         print "\nRunning classification for left arm data"
-        label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
+#        label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
+        label_names = ["BPQRS","DJV","EFG","AKLMN"]
         title = "Learning Curves for left arm data"
-        testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title)
+        testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title=title, mode=mode)
         
         # ----- LR -----
         print "\nRunning classification for both arm data"
         label_names = ["B","D","G","M"]
         title = "Learning Curves for both arm data"
-        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title)
+        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title=title, mode=mode)
         
         # ----- R -----
         print "\nRunning classification for right arm data"
-        label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
+#        label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
+        label_names = ["ABCD","ABCD","GNSV","FJMRY"]
         title = "Learning Curves for right arm data"
-        testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title)
+        testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title=title, mode=mode)
     
     
     
@@ -810,6 +860,7 @@ if __name__ == "__main__":
     #    rows = ["Gesture 0","Gesture 1","Gesture 2","Gesture 3"]
     #    columns = ["Desired Mean","Actual Mean","t-value","p-value","p < 0.05?"]
     #    cell_text = np.zeros((len(rows), len(columns)))
+        
         
         for i in range(num_gestures):
             # Split by gesture
@@ -844,20 +895,21 @@ if __name__ == "__main__":
     
         resultSet.append(splitResults)
         
-    if PLOT:
-        plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+#    if PLOT:
+    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
     
     
-    if testMode=="semi-random":
-        testSwarms = constructSwarms(resultSet, num_gestures, mode="notrand")
-        plotMultiVoteChart(testSwarms, num_gestures, title="Semi-random votes for gesture ", mode=3, flag=testMode)
-#        if PLOT: 
-#            for i in range(num_gestures):
-#                plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
+#    if testMode=="semi-random":
+    testSwarms = constructSwarms(resultSet, num_gestures, mode="notrand")  # not random so sorted by confidence
+#    plotMultiVoteChart(testSwarms, num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
+#    if PLOT: 
+#        for i in range(num_gestures):
+#            plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
 
 
 
 # TODO: account for randomness of swarms
 # TODO: sort swarm by conf?
+# TODO: Adjust single-arm weights by number of possible gesture options 
 
 
