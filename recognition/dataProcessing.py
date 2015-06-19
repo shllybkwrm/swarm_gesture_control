@@ -197,11 +197,11 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     
     # Apparently xval doesn't return fitted SVM?  Fit again
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
-    confidence = clf.decision_function(testSet).max(axis=1).reshape(-1,1)  # higher is better
-    if mode==3 and dataSet.ndim==1:
-        confidence = [conf*weight[pred] for (conf,pred) in zip(confidence, predictions)]
+    conf = clf.decision_function(testSet).max(axis=1).reshape(-1,1)  # higher is better
+    if mode==3 and np.ndim(weight)>0:  # ndim should be 1
+        confidence = [c*weight[pred] for (c,pred) in zip(conf, predictions)]
     else:
-        confidence = confidence * weight
+        confidence = conf * weight
 #    print "Uncertainty (in dist to separator) is:\n", confidence
 #    print "Predictions are:\n", predictions
 #    print "Expected:\n", testLabels[:,0]
