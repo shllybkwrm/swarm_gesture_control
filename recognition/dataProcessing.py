@@ -117,9 +117,10 @@ def plot_confusion_matrix(cm, target_names, title='Confusion matrix', cmap=plt.c
 def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Learning Curves", mode = 1 ):
     """
     Modes:
-        1:  no weighting
-        2:  2 arms -> double weight
-        3:  single arm -> less weight depending on choices
+        1:  no weighting - 1 vote per robot
+        2:  weight by confidence
+        3:  2 arms -> double weight
+        4:  single arm -> less weight depending on choices
     """
     dataSet = np.array(dataSet)
     dataLabels = np.array(dataLabels)
@@ -130,19 +131,19 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         clf = SVC(C=0.75)
         dataSet = dataSet.reshape(-1, 1)
         testSet = testSet.reshape(-1, 1)
-        if mode==1 or mode==2:
-            weight = 1
-        elif mode==3:
+        if mode==4:
             weight = np.zeros((len(label_names)))
             for idx,name in enumerate(label_names):
                 weight[idx] = 1.0/len(name)
+        else:
+            weight = 1
         
     else:  # 2 arm data
         clf = SVC(C=1.0)
-        if mode==1 or mode==3:
-            weight = 1
-        elif mode==2:
+        if mode==3:
             weight = 2
+        else:
+            weight = 1
     
 #        X_train, X_test, y_train, y_test = cross_validation.train_test_split(dataSet, dataLabels, test_size=0.1, random_state=0)
 #        clf.fit(X_train, y_train)
@@ -198,9 +199,13 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     # Apparently xval doesn't return fitted SVM?  Fit again
     predictions = clf.fit(dataSet, dataLabels).predict(testSet)
     conf = clf.decision_function(testSet).max(axis=1).reshape(-1,1)  # higher is better
-    if mode==3 and np.ndim(weight)>0:  # ndim should be 1
+    if mode==1:
+        confidence = np.ones(conf.shape)
+    elif mode==2:
+        confidence = conf
+    elif mode==4 and np.ndim(weight)>0:  # ndim should be 1
         confidence = [c*weight[pred] for (c,pred) in zip(conf, predictions)]
-    else:
+    else: # mode 3 or 4 & single weight (2-arm)
         confidence = conf * weight
 #    print "Uncertainty (in dist to separator) is:\n", confidence
 #    print "Predictions are:\n", predictions
@@ -231,6 +236,7 @@ def processFiles(files, vidDict, num_points, mode="structured"):
         structured:  evenly spaced across all data
         random:  as advertised
         semi-random:  same as random (for now)
+        constructed:  same as structured but affects plotting
     """
         # should these be 1 or (1,1)?
     dataSetL = np.zeros((1,1))  # Dummy entry that needs to be removed later!
@@ -301,7 +307,7 @@ def processFiles(files, vidDict, num_points, mode="structured"):
             # Add to cumulative angleSet for each gesture 
             middle = len(angleSet)/2
             points = np.arange(len(angleSet))
-            if mode=="structured":  # evenly select indices
+            if mode=="structured" or mode=="constructed":  # evenly select indices
                 interval = math.ceil( float(len(angleSet))/ num_points )  # round up so all have 6 (or num_points) points, not 7
                 points = points[points%interval==0]
             elif mode=="random" or mode=="semi-random":  # get random indices
@@ -502,8 +508,8 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results",
 def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
     """
     Modes:
-        1:  plot only votes without weighting
-        2:  both
+        1:  plot only votes without weighting)
+        2:  both (may not need 1 or 2 anymore, instead change weighting mode)
         3:  plot only weighted votes
     """
     votes = np.zeros((num_gestures,1))
@@ -553,7 +559,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         2:  both
         3:  plot only weighted votes
     """
-#    if flag=="semi-random" and len(gestureData[0])>1:
+#    if flag=="constructed" and len(gestureData[0])>1:
 #        print "ERROR:  Plot function not set up for more than 1 *actual* swarm."
     
     
@@ -571,7 +577,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         print "\n--- Gesture "+str(gesture)+" ---"
         
         
-        if flag=="semi-random":
+        if flag=="constructed":
             num_swarms = len(gestureData[gesture])
             swarms = gestureData[gesture]
         else:
@@ -581,11 +587,12 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         
         votes = np.zeros((num_swarms, num_gestures))
         weights = np.zeros((num_swarms, num_gestures))
+        errorBar = np.zeros((num_swarms, num_gestures))
         title2 = title+str(gesture)
             
         # w/ new construction, swarms are already divided by gesture
         for swarmID,swarm in enumerate(swarms):
-            if flag!="semi-random":
+            if flag!="constructed":
                 swarm = swarm[gesture]
             # Sort by vote
 #            swarm.view('i8,i8,f8,i8,f8').sort(order=['f3'], axis=0)
@@ -603,9 +610,14 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             secondBest_idx = np.where( weights[swarmID]==copy[-2] )[0][0]
             best = swarm[ swarm[:,3]==best_idx ][:,4]
             secondBest = swarm[ swarm[:,3]==secondBest_idx ][:,4]
+            
+            diff = weights[swarmID, best_idx] - weights[swarmID, secondBest_idx]
+#            if ( (diff+weights[swarmID, secondBest_idx]) <= 1.5 ) and ( diff<=weights[swarmID, secondBest_idx] ):
+            if ( diff <= weights[swarmID, secondBest_idx] ):
+                errorBar[swarmID, secondBest_idx] = diff
         
-            if len(swarm)>=20:
-                (t, p) = stats.ttest_ind(best, secondBest)
+            if len(swarm)>=10:
+                (t, p) = stats.ttest_ind(best, secondBest, equal_var = False)
                 print "t-test for swarm", swarmID, ":", (t,p)
                 
             else:
@@ -614,16 +626,19 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         
         
         
-        
-        for idx,swarm_votes in enumerate(votes):
-            swarm_weights = weights[idx]
+        # Normalize votes
+        for swarmID,swarm_votes in enumerate(votes):
+            swarm_weights = weights[swarmID]
             total = sum(swarm_votes)
             total_weight = sum(swarm_weights)
             
-            for idx2,vote in enumerate(swarm_votes):
-                weight = swarm_weights[idx2]
-                votes[idx,idx2] = float(vote)/total
-                weights[idx,idx2] = float(weight)/total_weight
+            for gestID,vote in enumerate(swarm_votes):
+                weight = swarm_weights[gestID]
+                votes[swarmID,gestID] = float(vote)/total
+                weights[swarmID,gestID] = float(weight)/total_weight
+                
+                err = errorBar[swarmID,gestID]
+                errorBar[swarmID,gestID] = float(err)/total_weight
         
         
         
@@ -639,17 +654,18 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
 #            colors = iter(["r", "b", "g"])
             colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
-                if flag=="semi-random":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[gesture][idx])) )
+                if flag=="constructed":
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
                 else:
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
             
+            plt.grid(zorder=0)
             plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Votes')
             plt.xlabel('Gestures')
-            if flag!="semi-random":
+            if flag!="constructed":
                 plt.legend()
             plt.tight_layout()
         
@@ -662,17 +678,18 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             
             colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
-                if flag=="semi-random":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[gesture][idx])) )
+                if flag=="constructed":
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3,  label="swarm size "+str(len(gestureData[gesture][idx])) )
                 else:
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), label="swarm size "+str(len(gestureData[idx][0])) )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
                 
+            plt.grid(zorder=0)
             plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Weighted votes')
             plt.xlabel('Gestures')
-            if flag!="semi-random":
+            if flag!="constructed":
                 plt.legend()
             plt.tight_layout()
         
@@ -721,8 +738,8 @@ def constructSwarms(gestureData, num_gestures, mode="rand"):#, title="Vote chart
 #                dataByGesture.append( np.concatenate((incorrect[:i], correct[:(new_size-i)])) )
             dataByGesture.append(newSwarms)
 #        singleSwarmData.append(singleGestureData)
-#        returnData.append(dataByGesture)
-        returnData = dataByGesture
+        returnData.append(dataByGesture)
+#        returnData = dataByGesture
         
         # TODO:  Differentiate between original swarms, Account for randomness
         
@@ -793,11 +810,11 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [10]  # Total size will be num*num_dist
+    points = [3,4,5,6]  # Total size will be num*num_dist
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
-    # Poss test modes: structured, random, semi-random
-    testMode = "structured"  # points should be length 1 if using semi-random
+    # Poss test modes: structured, random, semi-random, constructed
+    testMode = "structured"
     
     for num_points in points:
         print "\n\n----- Running recognition for", num_points, "points per distance -----"
@@ -807,8 +824,16 @@ if __name__ == "__main__":
         testSetL, testSetLR, testSetR,
         testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode=testMode)
         
-        # modes:  1=no weight on votes, 2=double weight on 2-arm votes, 3=less weight on 1-arm votes
-        mode = 3
+        
+        """
+        runSVM voting modes:
+            1:  no weighting - 1 vote per robot
+            2:  weight by confidence
+            3:  2 arms -> double weight
+            4:  single arm -> less weight depending on num-choices
+        """
+        mode = 4
+        
         
         # ----- L -----
         print "\nRunning classification for left arm data"
@@ -842,7 +867,7 @@ if __name__ == "__main__":
     #    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
     
     
-        print  num_points, "test points per distance"
+        print  "\n", num_points, "test points per distance"
         if PLOT:
             plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results", mode=2)
     
@@ -867,13 +892,14 @@ if __name__ == "__main__":
             splitResults[i] = testData[ testData[:,0]==i ]
             
             if PLOT:
+#            if testMode=="structured":
                 print "Results for gesture", i
                 plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
-                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
+#                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
             
             # Hypothesis test to see if there is a significant difference
             # Returns t, two-tailed p-val
-    #        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i)
+    #        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i, equal_var = False)
     #        cell_text[i] = [i, np.mean(splitResults[i][:,3]), t, p, (p<0.05)]
     #        print "Desired mean:", i, "mean result:", np.mean(splitResults[i][:,3])
     #        print "T-test:", t,p
@@ -896,12 +922,14 @@ if __name__ == "__main__":
         resultSet.append(splitResults)
         
 #    if PLOT:
-    plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+    if testMode=="structured":
+        plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
     
     
-#    if testMode=="semi-random":
-    testSwarms = constructSwarms(resultSet, num_gestures, mode="notrand")  # not random so sorted by confidence
-#    plotMultiVoteChart(testSwarms, num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
+    if testMode=="constructed":
+        testSwarms = constructSwarms(resultSet, num_gestures, mode="notrand")  # not random so sorted by confidence
+        for idx in range(len(points)):
+            plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
 #    if PLOT: 
 #        for i in range(num_gestures):
 #            plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
