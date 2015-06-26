@@ -439,6 +439,54 @@ def processFiles(files, vidDict, num_points, mode="structured"):
 
 
 
+def processResults(testLabels, testResults, num_gestures, points_per_gesture):
+    testIdx = np.arange(points_per_gesture)
+    np.random.shuffle( testIdx )
+#    shuffleData = testData[testIdx]
+    
+    splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
+#    rows = ["Gesture 0","Gesture 1","Gesture 2","Gesture 3"]
+#    columns = ["Desired Mean","Actual Mean","t-value","p-value","p < 0.05?"]
+#    cell_text = np.zeros((len(rows), len(columns)))
+    
+    
+    for i in range(num_gestures):
+        # Split by gesture
+        splitResults[i] = testData[ testData[:,0]==i ]
+        
+        if PLOT:
+#            if testMode=="structured":
+            print "Results for gesture", i
+            plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
+#                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
+        
+        # Hypothesis test to see if there is a significant difference
+        # Returns t, two-tailed p-val
+#        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i, equal_var = False)
+#        cell_text[i] = [i, np.mean(splitResults[i][:,3]), t, p, (p<0.05)]
+#        print "Desired mean:", i, "mean result:", np.mean(splitResults[i][:,3])
+#        print "T-test:", t,p
+        
+        # go through all possible swarms for each gesture
+#        for swarm in range(num_points):  
+        # swarms of same size already chosen so can evenly split
+#            shuffleData = splitResults[i][testIdx]
+#            swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
+#            for idx,swarm in enumerate(swarms):
+#                if PLOT:
+#                    title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
+#                    print title, "\n", swarm
+#                    plotResultMatrices(swarm, num_dist, num_points, title=title, mode=3)  # Combine these into subplots!
+
+#    plt.figure()    
+#    plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
+#    plt.show()
+
+    return splitResults
+
+
+
+
 def plotResultMatrices(testData, num_dist, num_points, title="Test set results", mode=2):
     """
     Modes:
@@ -810,10 +858,10 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [3,4,5,6]  # Total size will be num*num_dist
+    points = [10]  # Total size will be num*num_dist 
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
-    # Poss test modes: structured, random, semi-random, constructed
+    # Poss test modes: structured, random, semi-random, constructed 
     testMode = "structured"
     
     for num_points in points:
@@ -855,17 +903,17 @@ if __name__ == "__main__":
         title = "Learning Curves for right arm data"
         testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title=title, mode=mode)
     
-    
-    
+
+        
         testLabels = np.concatenate((testLabelsL, testLabelsLR, testLabelsR))  # , dtype=[('x', int), ('y', float)]
         testResults = np.concatenate((testResultL, testResultLR, testResultR))
-        
+                
         # Sort by gesture, position, distance
         testData = np.concatenate((testLabels, testResults),axis=1)  # act, pos, dist, res, conf
         testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)
     #    testData = testLabels.copy()
     #    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
-    
+        
     
         print  "\n", num_points, "test points per distance"
         if PLOT:
@@ -877,49 +925,11 @@ if __name__ == "__main__":
     #    testIdx = np.random.randint(0,30,5)
         points_per_gesture = num_dist*num_points  # num_dist is fixed, num_points is not
         print "Total possible test points (for each gesture):", points_per_gesture
-        testIdx = np.arange(points_per_gesture)
-        np.random.shuffle( testIdx )
-    #    shuffleData = testData[testIdx]
-        
-        splitResults = np.zeros((num_gestures, points_per_gesture, len(testData[0]) ))
-    #    rows = ["Gesture 0","Gesture 1","Gesture 2","Gesture 3"]
-    #    columns = ["Desired Mean","Actual Mean","t-value","p-value","p < 0.05?"]
-    #    cell_text = np.zeros((len(rows), len(columns)))
         
         
-        for i in range(num_gestures):
-            # Split by gesture
-            splitResults[i] = testData[ testData[:,0]==i ]
-            
-            if PLOT:
-#            if testMode=="structured":
-                print "Results for gesture", i
-                plotResultMatrices(splitResults[i], num_dist, num_points, title="Test set results for gesture "+str(i), mode=3)
-#                plotVoteChart(splitResults[i], num_gestures, title="Votes for gesture "+str(i), mode=2)
-            
-            # Hypothesis test to see if there is a significant difference
-            # Returns t, two-tailed p-val
-    #        (t, p) = stats.ttest_1samp(splitResults[i][:,3], i, equal_var = False)
-    #        cell_text[i] = [i, np.mean(splitResults[i][:,3]), t, p, (p<0.05)]
-    #        print "Desired mean:", i, "mean result:", np.mean(splitResults[i][:,3])
-    #        print "T-test:", t,p
-            
-            # go through all possible swarms for each gesture
-    #        for swarm in range(num_points):  
-            # swarms of same size already chosen so can evenly split
-#            shuffleData = splitResults[i][testIdx]
-#            swarms = np.array(np.array_split(shuffleData, num_dist))  # Each split should be num_points long
-#            for idx,swarm in enumerate(swarms):
-#                if PLOT:
-#                    title = "Results for swarm "+str(idx)+" of size "+str(num_points)+" for gesture "+str(i)
-#                    print title, "\n", swarm
-#                    plotResultMatrices(swarm, num_dist, num_points, title=title, mode=3)  # Combine these into subplots!
-    
-    #    plt.figure()    
-    #    plt.table(cellText=cell_text, rowLabels=rows, colLabels=columns)
-    #    plt.show()
-    
-        resultSet.append(splitResults)
+        resultSet.append( processResults(testLabels, testResults, num_gestures, points_per_gesture) )
+        
+        
         
 #    if PLOT:
     if testMode=="structured":
