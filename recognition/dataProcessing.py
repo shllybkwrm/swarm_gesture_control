@@ -630,8 +630,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             num_swarms = len(gestureData[gesture])
             swarms = gestureData[gesture]
         elif flag=="average":
-            num_swarms = len(list(gestureData[gesture]))
-            swarms = gestureData[gesture]
+            swarms = np.array(gestureData[gesture])
+            num_swarms = len(swarms)
         else:
             num_swarms = len(gestureData)
             swarms = gestureData
@@ -988,9 +988,10 @@ if __name__ == "__main__":
                 pass
                 plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
         else:
-            pass
 #            averageVotes(testSwarms)
-            plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag="average")
+            for idx in range(len(points)):
+                pass
+                plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag="average")
             # TODO:  Create new func for averaging results, then send into vote chart plotter
 #    if PLOT: 
 #        for i in range(num_gestures):
