@@ -606,10 +606,11 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         1:  plot only votes without weighting
         2:  both
         3:  plot only weighted votes
-    """
-#    if flag=="constructed" and len(gestureData[0])>1:
-#        print "ERROR:  Plot function not set up for more than 1 *actual* swarm."
-    
+    Flags:
+        default:  as advertised
+        constructed:  adjusts for different formatting of results
+        average:  adjusts for different formatting of results
+    """    
     
     
     # From http://matplotlib.org/examples/api/barchart_demo.html
@@ -628,6 +629,9 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         if flag=="constructed":
             num_swarms = len(gestureData[gesture])
             swarms = gestureData[gesture]
+        elif flag=="average":
+            num_swarms = len(list(gestureData[gesture]))
+            swarms = gestureData[gesture]
         else:
             num_swarms = len(gestureData)
             swarms = gestureData
@@ -640,7 +644,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             
         # w/ new construction, swarms are already divided by gesture
         for swarmID,swarm in enumerate(swarms):
-            if flag!="constructed":
+            if flag!="constructed" and flag!="average":
                 swarm = swarm[gesture]
             # Sort by vote
 #            swarm.view('i8,i8,f8,i8,f8').sort(order=['f3'], axis=0)
@@ -704,6 +708,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             for idx in range(num_swarms):
                 if flag=="constructed":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
+                elif flag=="average":
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3 )
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -713,7 +719,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Votes')
             plt.xlabel('Gestures')
-            if flag!="constructed":
+            if flag!="constructed" and flag!="average":
                 plt.legend()
             plt.tight_layout()
         
@@ -728,6 +734,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             for idx in range(num_swarms):
                 if flag=="constructed":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3,  label="swarm size "+str(len(gestureData[gesture][idx])) )
+                elif flag=="average":
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3 )
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -737,7 +745,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Weighted votes')
             plt.xlabel('Gestures')
-            if flag!="constructed":
+            if flag!="constructed" and flag!="average":
                 plt.legend()
             plt.tight_layout()
         
@@ -765,8 +773,8 @@ def constructSwarms(gestureData, num_gestures, mode="notrand"):#, title="Vote ch
             if mode=="allcomb":
                 new_size = 3
                 print "Number of combinations is", misc.comb(len(swarm[gesture]), new_size)
-                dataByGesture.append( np.array(itertools.combinations(swarm[gesture], new_size)) )
-                # TODO: avoid iterator conversion if possible!
+                dataByGesture.append( itertools.combinations(swarm[gesture], new_size) )
+                # avoid iterator conversion if possible!
                 pass
             
             else:
@@ -845,6 +853,22 @@ def constructSwarms(gestureData, num_gestures, mode="notrand"):#, title="Vote ch
 #            plt.xlabel('Gestures')
 #        
 #        plt.show()
+
+
+
+#def averageVotes(testSwarms):
+#    
+#    for gestID,gestureData in enumerate(testSwarms):
+#        sums = np.zeros((len(testSwarms), len(testSwarms)))
+#        lens = np.zeros((len(testSwarms), len(testSwarms)))
+#        avgs = np.zeros((len(testSwarms), len(testSwarms)))
+#        for swarmID,swarmData in enumerate(gestureData):
+#            for swarm in swarmData:
+#                swarmSum = sum(swarm[-2,:])
+#                swarmAvg
+#                for testPoint in swarm:
+#                    [act,x,y,res,conf] = testPoint
+
 
 
 
@@ -950,7 +974,7 @@ if __name__ == "__main__":
         plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
     
     
-    if testMode=="constructed":
+    elif testMode=="constructed":
         """
         test modes:
             rand:  sorted randomly
@@ -965,6 +989,8 @@ if __name__ == "__main__":
                 plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
         else:
             pass
+#            averageVotes(testSwarms)
+            plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag="average")
             # TODO:  Create new func for averaging results, then send into vote chart plotter
 #    if PLOT: 
 #        for i in range(num_gestures):
