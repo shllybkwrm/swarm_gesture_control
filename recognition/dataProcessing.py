@@ -627,16 +627,13 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         
         
         if flag=="constructed":
-            num_swarms = len(gestureData[gesture])
             swarms = gestureData[gesture]
         elif flag=="average":
-            swarms = np.array(gestureData[gesture])
-            num_swarms = len(swarms)
+            swarms = np.array(list(gestureData[gesture]))
         else:
-            num_swarms = len(gestureData)
             swarms = gestureData
             
-        
+        num_swarms = len(swarms)
         votes = np.zeros((num_swarms, num_gestures))
         weights = np.zeros((num_swarms, num_gestures))
         errorBar = np.zeros((num_swarms, num_gestures))
