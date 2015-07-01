@@ -641,7 +641,9 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             
         # w/ new construction, swarms are already divided by gesture
         for swarmID,swarm in enumerate(swarms):
-            if flag!="constructed" and flag!="average":
+            if flag=="average":
+                swarmSize = len(swarm)
+            elif flag!="constructed":
                 swarm = swarm[gesture]
             # Sort by vote
 #            swarm.view('i8,i8,f8,i8,f8').sort(order=['f3'], axis=0)
@@ -653,26 +655,27 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
         
         
             # --- Evaluating confidence in overall results ---
-            copy = weights[swarmID].copy()
-            copy.sort()
-            best_idx = np.where( weights[swarmID]==copy[-1] )[0][0]  # Output as tuple of arrays
-            secondBest_idx = np.where( weights[swarmID]==copy[-2] )[0][0]
-            best = swarm[ swarm[:,3]==best_idx ][:,4]
-            secondBest = swarm[ swarm[:,3]==secondBest_idx ][:,4]
-            
-            diff = weights[swarmID, best_idx] - weights[swarmID, secondBest_idx]
-#            if ( (diff+weights[swarmID, secondBest_idx]) <= 1.5 ) and ( diff<=weights[swarmID, secondBest_idx] ):
-            if ( diff <= weights[swarmID, secondBest_idx] ):
-                errorBar[swarmID, secondBest_idx] = diff
-        
-            if len(swarm)>=10:
-                (t, p) = stats.ttest_ind(best, secondBest, equal_var = False)
-                print "t-test for swarm", swarmID, ":", (t,p)
+            if flag!="average":
+                copy = weights[swarmID].copy()
+                copy.sort()
+                best_idx = np.where( weights[swarmID]==copy[-1] )[0][0]  # Output as tuple of arrays
+                secondBest_idx = np.where( weights[swarmID]==copy[-2] )[0][0]
+                best = swarm[ swarm[:,3]==best_idx ][:,4]
+                secondBest = swarm[ swarm[:,3]==secondBest_idx ][:,4]
                 
-            else:
-                percentDiff = 100 * weights[swarmID, best_idx] - weights[swarmID, secondBest_idx] / np.mean( [weights[swarmID, best_idx], weights[swarmID, secondBest_idx]] )
-                print "Percent difference for swarm", swarmID, ":", percentDiff
-        
+                diff = weights[swarmID, best_idx] - weights[swarmID, secondBest_idx]
+#                if ( (diff+weights[swarmID, secondBest_idx]) <= 1.5 ) and ( diff<=weights[swarmID, secondBest_idx] ):
+                if ( diff <= weights[swarmID, secondBest_idx] ):
+                    errorBar[swarmID, secondBest_idx] = diff
+            
+                if len(swarm)>=10:
+                    (t, p) = stats.ttest_ind(best, secondBest, equal_var = False)
+                    print "t-test for swarm", swarmID, ":", (t,p)
+                    
+                else:
+                    percentDiff = 100 * weights[swarmID, best_idx] - weights[swarmID, secondBest_idx] / np.mean( [weights[swarmID, best_idx], weights[swarmID, secondBest_idx]] )
+                    print "Percent difference for swarm", swarmID, ":", percentDiff
+            
         
         
         # Normalize votes
@@ -686,8 +689,36 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 votes[swarmID,gestID] = float(vote)/total
                 weights[swarmID,gestID] = float(weight)/total_weight
                 
-                err = errorBar[swarmID,gestID]
-                errorBar[swarmID,gestID] = float(err)/total_weight
+                if flag!="average":
+                    err = errorBar[swarmID,gestID]
+                    errorBar[swarmID,gestID] = float(err)/total_weight
+        
+        
+        if flag=="average":
+            votes = np.mean(votes, axis=0)
+            weights = np.mean(weights, axis=0)
+            num_swarms = 1
+            
+            
+            # --- Evaluating confidence in overall results ---
+            swarmID = 0
+            errorBar = np.zeros((num_gestures))
+            
+            copy = weights.copy()
+            copy.sort()
+            best_idx = np.where( weights==copy[-1] )[0][0]  # Output as tuple of arrays
+            secondBest_idx = np.where( weights==copy[-2] )[0][0]
+            
+            diff = weights[best_idx] - weights[secondBest_idx]
+#                if ( (diff+weights[secondBest_idx]) <= 1.5 ) and ( diff<=weights[secondBest_idx] ):
+            if ( diff <= weights[secondBest_idx] ):
+                print "Possibly significant difference between top two votes -"
+                errorBar[secondBest_idx] = diff
+                print "Error bar:", errorBar
+    
+            percentDiff = 100 * weights[best_idx] - weights[secondBest_idx] / np.mean( [weights[best_idx], weights[secondBest_idx]] )
+            print "Percent difference for swarm", swarmID, ":", percentDiff
+        
         
         
         
@@ -704,11 +735,11 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
             for idx in range(num_swarms):
                 if flag=="constructed":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
                 elif flag=="average":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3 )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
                 else:
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
             
             plt.grid(zorder=0)
@@ -716,7 +747,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Votes')
             plt.xlabel('Gestures')
-            if flag!="constructed" and flag!="average":
+            if flag!="constructed":
                 plt.legend()
             plt.tight_layout()
         
@@ -732,7 +763,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 if flag=="constructed":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3,  label="swarm size "+str(len(gestureData[gesture][idx])) )
                 elif flag=="average":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3 )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights, yerr=errorBar, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -742,7 +773,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
             plt.ylabel('Weighted votes')
             plt.xlabel('Gestures')
-            if flag!="constructed" and flag!="average":
+            if flag!="constructed":
                 plt.legend()
             plt.tight_layout()
         
@@ -751,7 +782,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
 
 
 
-def constructSwarms(gestureData, num_gestures, mode="notrand"):#, title="Vote chart", mode=2):
+def constructSwarms(gestureData, num_gestures, mode="notrand", new_size=None):#, title="Vote chart", mode=2):
     """
     Modes:
         rand:  robots selected in random order
@@ -768,7 +799,7 @@ def constructSwarms(gestureData, num_gestures, mode="notrand"):#, title="Vote ch
         
         for gesture in range(num_gestures):
             if mode=="allcomb":
-                new_size = 3
+#                new_size = 3
                 print "Number of combinations is", misc.comb(len(swarm[gesture]), new_size)
                 dataByGesture.append( itertools.combinations(swarm[gesture], new_size) )
                 # avoid iterator conversion if possible!
@@ -887,7 +918,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [3]  # Total size will be num*num_dist 
+    points = [5]  # Total size will be num*num_dist (5)
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     """
@@ -906,6 +937,8 @@ if __name__ == "__main__":
         dataLabelsL, dataLabelsLR, dataLabelsR,
         testSetL, testSetLR, testSetR,
         testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode=testMode)
+        
+            # TODO: Send in swarm size
         
         
         """
@@ -975,29 +1008,26 @@ if __name__ == "__main__":
         """
         test modes:
             rand:  sorted randomly
-            allcomb:  all combinations of certain size
+            allcomb:  all combinations of certain size.  Need to send in new_size when using this!
             anything else:   sorted by confidence
         """
         constructMode = "allcomb"
-        testSwarms = constructSwarms(resultSet, num_gestures, mode=constructMode)
-        if constructMode!="allcomb":
-            for idx in range(len(points)):
-                pass
+        testSwarms = constructSwarms(resultSet, num_gestures, mode=constructMode, new_size=7)
+        for idx in range(len(points)):
+            if constructMode!="allcomb":
+#                pass
                 plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
-        else:
-#            averageVotes(testSwarms)
-            for idx in range(len(points)):
-                pass
+            else:
+#                averageVotes(testSwarms)
+#                pass
                 plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag="average")
-            # TODO:  Create new func for averaging results, then send into vote chart plotter
+
 #    if PLOT: 
 #        for i in range(num_gestures):
 #            plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
 
 
 
-# TODO: account for randomness of swarms
-# TODO: sort swarm by conf?
-# TODO: Adjust single-arm weights by number of possible gesture options 
+# TODO: account for randomness of swarms?
 
 
