@@ -654,11 +654,11 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 weights[swarmID, res] += abs(conf)
         
         
-            # --- Evaluating confidence in overall results ---
             if flag!="average":
+            # --- Evaluating confidence in overall results ---
                 copy = weights[swarmID].copy()
                 copy.sort()
-                best_idx = np.where( weights[swarmID]==copy[-1] )[0][0]  # Output as tuple of arrays
+                best_idx = np.where( weights[swarmID]==copy[-1] )[0][0]  # Output as tuple of arrays 
                 secondBest_idx = np.where( weights[swarmID]==copy[-2] )[0][0]
                 best = swarm[ swarm[:,3]==best_idx ][:,4]
                 secondBest = swarm[ swarm[:,3]==secondBest_idx ][:,4]
@@ -675,8 +675,17 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 else:
                     percentDiff = 100 * weights[swarmID, best_idx] - weights[swarmID, secondBest_idx] / np.mean( [weights[swarmID, best_idx], weights[swarmID, secondBest_idx]] )
                     print "Percent difference for swarm", swarmID, ":", percentDiff
+                    
+            else:
+            # Collect one vote from entire swarm 
+                copy = weights[swarmID].copy()
+                copy.sort()
+                best_idx = np.where( weights[swarmID]==copy[-1] )[0][0]  # Output as tuple of arrays 
+                new_weights = np.zeros((num_gestures))
+                new_weights[best_idx] = copy[-1]
+                weights[swarmID] = new_weights                
+              
             
-        
         
         # Normalize votes
         for swarmID,swarm_votes in enumerate(votes):
@@ -692,6 +701,10 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
                 if flag!="average":
                     err = errorBar[swarmID,gestID]
                     errorBar[swarmID,gestID] = float(err)/total_weight
+            
+#            if flag=="average":
+#            # Collect one vote from entire swarm 
+                
         
         
         if flag=="average":
@@ -918,7 +931,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [6]  # Total size will be num*num_dist (5)
+    points = [5]  # Total size will be num*num_dist (5)
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     """
