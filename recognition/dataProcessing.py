@@ -931,7 +931,7 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [5]  # Total size will be num*num_dist (5)
+    points = [6]  # Total size will be num*num_dist (5)
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     """
