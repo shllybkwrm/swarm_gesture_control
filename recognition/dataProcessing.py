@@ -623,7 +623,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
     
     
     for gesture in range(num_gestures):
-        print "\n--- Gesture "+str(gesture)+" ---"
+        print "\n--- Gesture ", gesture, " ---"
         
         
         if flag=="constructed":
@@ -791,6 +791,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2, 
             plt.tight_layout()
         
         plt.show()
+        
+    return weights
 
 
 
@@ -931,7 +933,8 @@ if __name__ == "__main__":
 
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [6]  # Total size will be num*num_dist (5)
+    points = [5]  # Total size will be num*num_dist (5)
+    testSizes = [3,5]  
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     """
@@ -951,7 +954,6 @@ if __name__ == "__main__":
         testSetL, testSetLR, testSetR,
         testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode=testMode)
         
-            # TODO: Send in swarm size
         
         
         """
@@ -1025,15 +1027,18 @@ if __name__ == "__main__":
             anything else:   sorted by confidence
         """
         constructMode = "allcomb"
-        testSwarms = constructSwarms(resultSet, num_gestures, mode=constructMode, new_size=5)
-        for idx in range(len(points)):
-            if constructMode!="allcomb":
-#                pass
-                plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
-            else:
-#                averageVotes(testSwarms)
-#                pass
-                plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag="average")
+        weightSet = []
+        for swarmSize in testSizes:
+            print "- Swarm size", swarmSize, "-"
+            testSwarms = constructSwarms(resultSet, num_gestures, mode=constructMode, new_size=swarmSize) 
+            for idx in range(len(points)):
+                if constructMode!="allcomb":
+    #                pass
+                    plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
+                else:
+    #                averageVotes(testSwarms) 
+    #                pass
+                    weightSet.append( plotMultiVoteChart(testSwarms[idx], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag="average") )
 
 #    if PLOT: 
 #        for i in range(num_gestures):
