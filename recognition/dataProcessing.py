@@ -600,7 +600,7 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 
-def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, flag="default"):
+def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, flag="default", swarmSizes=[]):
     """
     Modes:
         1:  plot only votes without weighting
@@ -619,8 +619,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
     # attach some text labels
         for rect in rects:
             height = rect.get_height()
-            plt.text(rect.get_x()+rect.get_width()/2., 1.01*height, '%1.2f'%height, ha='center', va='bottom')
-                
+            plt.text(rect.get_x()+rect.get_width()/2., 0.99*height, '%1.2f'%height, ha='center', va='bottom')
+            
     
     weightSet = []
         
@@ -631,6 +631,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
             
             num_swarms = len(gestureData)
             title2 = title+str(gesture)
+#            swarmSizes = [3,5,7]
             
         else:
             
@@ -765,6 +766,8 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
                     bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
                 elif flag=="average":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, votes, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
+                elif flag=="noCalc":
+                    print "Not set up, use different testing mode instead!"
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -793,7 +796,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
                 elif flag=="average":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights, yerr=errorBar, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
                 elif flag=="noCalc":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(len(gestureData[idx][0])) )
+                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(swarmSizes[idx]) )
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -951,7 +954,7 @@ if __name__ == "__main__":
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
     points = [5]  # Total size will be num*num_dist (5)
-    testSizes = [3,5,7]  
+    testSizes = [3,5,7,9]  
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
     """
@@ -1059,7 +1062,9 @@ if __name__ == "__main__":
                     weightSet.append( plotMultiVoteChart(testSwarms[idx2], num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="average") )
 
 #        print "Weights are", weightSet
-        plotMultiVoteChart(weightSet, num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="noCalc")
+        plt.close("all")
+        # Need to send in swarmSizes when using flag="noCalc"
+        plotMultiVoteChart(weightSet, num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="noCalc", swarmSizes=testSizes)
 
 #    if PLOT: 
 #        for i in range(num_gestures):
@@ -1068,5 +1073,6 @@ if __name__ == "__main__":
 
 
 # TODO: account for randomness of swarms?
+# TODO: work around saving all poss combinations 
 
 
