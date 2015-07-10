@@ -641,7 +641,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
             if flag=="constructed":
                 swarms = gestureData[gesture]
             elif flag=="average":
-                swarms = np.array(list(gestureData[gesture]))
+                swarms = np.array(list(gestureData[gesture])) 
             else:
                 swarms = gestureData
                 
@@ -951,22 +951,39 @@ if __name__ == "__main__":
                "videoM30m":"R", "videoM25m":"R", "videoM20m":"L", "videoM15m":"R", "videoM10m":"L",}
     
 
-    num_gestures = len(files)  # 4
-    num_dist = len(files[0])  # 5
-    points = [5]  # Total size will be num*num_dist (5)
-    testSizes = [3,5,7,9]  
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
+    num_gestures = len(files)  # 4
+    num_dist = len(files[0])  # 5
+    points = [5,5,5,5]  # Total size will be num*num_dist (5)
+    testSizes = [5] 
     """
     test modes:
-        structured:  evenly spaced
-        random:  
-        semi-random:  same as rand...?
-        constructed:  same as struct but used later
+        structured:     evenly spaced 
+        random:         as advertised 
+        semi-random:    same as rand...?
+        constructed:    same as struct but used later 
     """
     testMode = "constructed"
+    if testMode=="constructed":
+        """
+        test modes:
+            rand:  sorted randomly
+            allcomb:  all combinations of certain size.  Need to send in new_size when using this!
+            anything else:   sorted by confidence
+        """
+        constructMode = "allcomb"
+    """
+    runSVM voting modes:
+        1:  no weighting - 1 vote per robot
+        2:  weight by confidence
+        3:  2 arms -> double weight
+        4:  single arm -> less weight depending on num-choices
+    """
+    voteModes = [1,2,3,4]
     
-    for num_points in points:
+    
+    for pointIdx,num_points in enumerate(points):
         print "\n\n----- Running recognition for", num_points, "points per distance -----"
         
         (dataSetL, dataSetLR, dataSetR, 
@@ -975,15 +992,8 @@ if __name__ == "__main__":
         testLabelsL, testLabelsLR, testLabelsR) = processFiles(files, vidDict, num_points, mode=testMode)
         
         
-        
-        """
-        runSVM voting modes:
-            1:  no weighting - 1 vote per robot
-            2:  weight by confidence
-            3:  2 arms -> double weight
-            4:  single arm -> less weight depending on num-choices
-        """
-        mode = 4
+        voteMode = voteModes[pointIdx]
+        print "Using vote mode", voteMode 
         
         
         # ----- L -----
@@ -991,20 +1001,20 @@ if __name__ == "__main__":
 #        label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
         label_names = ["BPQRS","DJV","EFG","AKLMN"]
         title = "Learning Curves for left arm data"
-        testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title=title, mode=mode)
+        testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title=title, mode=voteMode)
         
         # ----- LR -----
         print "\nRunning classification for both arm data"
         label_names = ["B","D","G","M"]
         title = "Learning Curves for both arm data"
-        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title=title, mode=mode)
+        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title=title, mode=voteMode)
         
         # ----- R -----
         print "\nRunning classification for right arm data"
 #        label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
         label_names = ["ABCD","ABCD","GNSV","FJMRY"]
         title = "Learning Curves for right arm data"
-        testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title=title, mode=mode)
+        testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title=title, mode=voteMode)
     
 
         
@@ -1040,14 +1050,8 @@ if __name__ == "__main__":
     
     
     elif testMode=="constructed":
-        """
-        test modes:
-            rand:  sorted randomly
-            allcomb:  all combinations of certain size.  Need to send in new_size when using this!
-            anything else:   sorted by confidence
-        """
-        constructMode = "allcomb"
-        weightSet = []#np.zeros((len(testSizes), len(points), num_gestures))
+        
+        weightSet = [] #np.zeros((len(testSizes), len(points), num_gestures))
         for idx1,swarmSize in enumerate(testSizes):
             print "- Swarm size", swarmSize, "-"
             testSwarms = constructSwarms(resultSet, num_gestures, mode=constructMode, new_size=swarmSize) 
@@ -1073,6 +1077,6 @@ if __name__ == "__main__":
 
 
 # TODO: account for randomness of swarms?
-# TODO: work around saving all poss combinations 
+# TODO: work around saving all poss combinations (memory error) 
 
 
