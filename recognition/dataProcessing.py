@@ -780,7 +780,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
             plt.grid(zorder=0)
             plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
-            plt.ylabel('Votes')
+            plt.ylabel('Normalized votes')
             plt.xlabel('Gestures')
             if flag!="constructed":
                 plt.legend()
@@ -815,7 +815,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
             plt.grid(zorder=0)
             plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
             plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
-            plt.ylabel('Weighted votes')
+            plt.ylabel('Normalized votes by weight')
             plt.xlabel('Gestures')
             if flag!="constructed":
                 plt.legend()
@@ -966,7 +966,7 @@ if __name__ == "__main__":
     resultSet = []
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [5,5,5,5]  # Total size will be num*num_dist (5)
+    points = [6,6,6,6]  # Total size will be num*num_dist (5)
     testSizes = [5]  # per each num_points or just once?
     """
     runSVM voting modes:
