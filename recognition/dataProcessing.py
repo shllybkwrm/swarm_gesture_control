@@ -629,14 +629,16 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
         if flag=="noCalc":
             weights = np.array( gestureData )[:,gesture]
             
-            num_swarms = len(gestureData)
-            title2 = title+str(gesture)
 #            swarmSizes = [3,5,7]
+            num_swarms = len(swarmSizes)
+            num_points = len(gestureData)
+            title2 = title+str(gesture)
             
         else:
             
             print "\n--- Gesture ", gesture, " ---"
             
+#            num_points = 1  # ???
             
             if flag=="constructed":
                 swarms = gestureData[gesture]
@@ -737,7 +739,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
                 diff = weights[best_idx] - weights[secondBest_idx]
     #                if ( (diff+weights[secondBest_idx]) <= 1.5 ) and ( diff<=weights[secondBest_idx] ):
                 if ( diff <= weights[secondBest_idx] ):
-                    print "Possibly significant difference between top two votes -"
+                    print "Possibly significant difference between top two votes-"
                     errorBar[secondBest_idx] = diff
                     print "Error bar:", errorBar
         
@@ -751,7 +753,10 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
         # --- Plotting starts here ---
         
         plt.figure()
-        width = 1.0/(num_swarms+1)  # extra space for between gesture groups
+        if flag=="noCalc":
+            width = 1.0/((num_points*num_swarms)+1)
+        else:
+            width = 1.0/(num_swarms+1)  # extra space for between gesture groups
         
         if mode==2:
             plt.subplot(121)
@@ -789,14 +794,20 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
 #            plt.title("Weighted "+title2)
             plt.title(title2)
             
-            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+            if flag=="noCalc":
+                colors = iter(cm.rainbow(np.linspace(0, 1, num_points*num_swarms)))
+            else:
+                colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+            
             for idx in range(num_swarms):
                 if flag=="constructed":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3,  label="swarm size "+str(len(gestureData[gesture][idx])) )
                 elif flag=="average":
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights, yerr=errorBar, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
                 elif flag=="noCalc":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(swarmSizes[idx]) )
+                    for idx2 in range(num_points):
+#                        bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(swarmSizes[idx]) )
+                        bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="vote mode "+str(idx2) )
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -835,7 +846,7 @@ def constructSwarms(gestureData, num_gestures, mode="notrand", new_size=None):#,
         for gesture in range(num_gestures):
             if mode=="allcomb":
 #                new_size = 3
-                print "Number of combinations is", misc.comb(len(swarm[gesture]), new_size)
+                print "Number of combinations =", misc.comb(len(swarm[gesture]), new_size)
                 dataByGesture.append( itertools.combinations(swarm[gesture], new_size) )
                 # avoid iterator conversion if possible!
                 pass
@@ -956,7 +967,15 @@ if __name__ == "__main__":
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
     points = [5,5,5,5]  # Total size will be num*num_dist (5)
-    testSizes = [5] 
+    testSizes = [5]  # per each num_points or just once?
+    """
+    runSVM voting modes:
+        1:  no weighting - 1 vote per robot
+        2:  weight by confidence
+        3:  2 arms -> double weight
+        4:  single arm -> less weight depending on num-choices
+    """
+    voteModes = [1,2,3,4]  # must be same size as points!
     """
     test modes:
         structured:     evenly spaced 
@@ -967,20 +986,12 @@ if __name__ == "__main__":
     testMode = "constructed"
     if testMode=="constructed":
         """
-        test modes:
+        swarm construction modes:
             rand:  sorted randomly
-            allcomb:  all combinations of certain size.  Need to send in new_size when using this!
+            allcomb:  all combinations of certain size.  Need to send in new_size to constructSwarms when using this!
             anything else:   sorted by confidence
         """
         constructMode = "allcomb"
-    """
-    runSVM voting modes:
-        1:  no weighting - 1 vote per robot
-        2:  weight by confidence
-        3:  2 arms -> double weight
-        4:  single arm -> less weight depending on num-choices
-    """
-    voteModes = [1,2,3,4]
     
     
     for pointIdx,num_points in enumerate(points):
@@ -993,7 +1004,7 @@ if __name__ == "__main__":
         
         
         voteMode = voteModes[pointIdx]
-        print "Using vote mode", voteMode 
+        print "------- Using vote mode", voteMode, "-------"
         
         
         # ----- L -----
@@ -1044,6 +1055,8 @@ if __name__ == "__main__":
         resultSet.append( processResults(testLabels, testResults, num_gestures, points_per_gesture) )
         
         
+    print "\n\n"
+        
 #    if PLOT:
     if testMode=="structured":
         plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
@@ -1055,11 +1068,13 @@ if __name__ == "__main__":
         for idx1,swarmSize in enumerate(testSizes):
             print "- Swarm size", swarmSize, "-"
             testSwarms = constructSwarms(resultSet, num_gestures, mode=constructMode, new_size=swarmSize) 
-            for idx2 in range(len(points)):
+            for idx2,num_points in enumerate(points):
+                print "- num points = 5 *", num_points, "-"
                 if constructMode!="allcomb":
     #                pass
                     plotMultiVoteChart(testSwarms[idx2], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
                 else:
+                    print "Collecting averaged votes"
     #                averageVotes(testSwarms) 
     #                pass
 #                    weightSet[idx1,idx2] = plotMultiVoteChart(testSwarms[idx2], num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="average") 
