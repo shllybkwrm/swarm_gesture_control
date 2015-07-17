@@ -792,6 +792,9 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
             print "Weighted votes:\n", weights, "\n"
             
 #            plt.title("Weighted "+title2)
+#            if flag=="noCalc":
+#                plt.title("Average votes for all combinations of swarm size "+str(swarmSizes[0])+"for gesture "+str(gesture))
+#            else:
             plt.title(title2)
             
             if flag=="noCalc":
@@ -808,6 +811,7 @@ def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, 
                     for idx2 in range(num_points):
 #                        bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(swarmSizes[idx]) )
                         bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="vote mode "+str(idx2) )
+                        autolabel(bars)
                 else:
                     bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
                 autolabel(bars)
@@ -879,7 +883,7 @@ def constructSwarms(gestureData, num_gestures, mode="notrand", new_size=None):#,
         returnData.append(dataByGesture)
 #        returnData = dataByGesture
         
-        # TODO:  Differentiate between original swarms, Account for randomness
+        # TODO:  Differentiate between original swarms?  Is this done?
         
     
     return returnData
@@ -966,8 +970,8 @@ if __name__ == "__main__":
     resultSet = []
     num_gestures = len(files)  # 4
     num_dist = len(files[0])  # 5
-    points = [6,6,6,6]  # Total size will be num*num_dist (5)
-    testSizes = [5]  # per each num_points or just once?
+    points = [4,4,4,4]  # Total size will be num*num_dist (5)
+    testSizes = [3]  # Sizes of swarms for allcomb  # TODO: per each num_points or just once? 
     """
     runSVM voting modes:
         1:  no weighting - 1 vote per robot
@@ -975,7 +979,7 @@ if __name__ == "__main__":
         3:  2 arms -> double weight
         4:  single arm -> less weight depending on num-choices
     """
-    voteModes = [1,2,3,4]  # must be same size as points!
+    voteModes = [1,2,3,4]  # must be same size as points!  # TODO:  Index from 0
     """
     test modes:
         structured:     evenly spaced 
@@ -1083,7 +1087,7 @@ if __name__ == "__main__":
 #        print "Weights are", weightSet
         plt.close("all")
         # Need to send in swarmSizes when using flag="noCalc"
-        plotMultiVoteChart(weightSet, num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="noCalc", swarmSizes=testSizes)
+        plotMultiVoteChart(weightSet, num_gestures, title="Average votes for all combinations of swarm size "+str(testSizes[0])+" for gesture ", mode=3, flag="noCalc", swarmSizes=testSizes)
 
 #    if PLOT: 
 #        for i in range(num_gestures):
@@ -1093,5 +1097,4 @@ if __name__ == "__main__":
 
 # TODO: account for randomness of swarms?
 # TODO: work around saving all poss combinations (memory error) 
-
 
