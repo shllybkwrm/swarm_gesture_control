@@ -63,7 +63,7 @@ def main(robotIP):
     videoRecorderProxy.setResolution(2)
     videoRecorderProxy.setFrameRate(20)
     videoRecorderProxy.setVideoFormat("MJPG")
-    videoRecorderProxy.startRecording("/home/nao/recordings/cameras", "videoM10m")#+str(time.time()) )
+    videoRecorderProxy.startRecording("/home/nao/recordings/cameras", "videoN10m")#+str(time.time()) )
     
     
     #for i in xrange(0,10):
