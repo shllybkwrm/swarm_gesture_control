@@ -17,16 +17,16 @@ from sklearn.cluster import MiniBatchKMeans
 
 RECORD = 0
 OUTPUT = 0
-DISPLAY = 0
+DISPLAY = 1
 
 ABSOLUTE = 0
 if ABSOLUTE:
-    videoPath = "C:/Users/Shelly/Documents/GitHub/swarm_gesture_control/recognition/nao_code/videos/"
+    videoPath = "C:/Users/Shelly/Documents/GitHub/swarm_gesture_control/recognition/nao/videos/"
     dataPath = "C:/Users/Shelly/Documents/GitHub/swarm_gesture_control/recognition/data/"
 else:
     import os
     dir = os.getcwd()
-    videoPath = dir+"/nao_code/videos/"
+    videoPath = dir+"/nao/videos/"
     dataPath = dir+"/data/"
 suffix = "Converted"
 videoExt = ".avi"
@@ -343,11 +343,8 @@ def processVideo(filename="videoB30m"):
 
 if __name__ == "__main__":
     # currently only using L to R videos
-    filename = "videoB25m"
-#    filename = "videoD25m"
-#    filename = "videoG30m"
-#    filename = "videoM15m"
-    print "Processing file ", filename
+    filename = "videoA30m"
+    print "Processing file ", filename 
     
     if 'B' in filename:  # status: done for one flag
         # define range of color in HSV

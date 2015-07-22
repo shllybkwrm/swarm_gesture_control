@@ -1,0 +1,1 @@
+mencoder.exe videoA10m.avi -nosound -ovc raw -vf format=i420 -o videoA10mConverted.avi

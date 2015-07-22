@@ -1,0 +1,12 @@
+# IT IS UNLIKELY YOU WANT TO EDIT THIS FILE BY HAND,
+# UNLESS FOR REMOVING ENTRIES.
+# IF YOU WANT TO CHANGE THE ROS ENVIRONMENT VARIABLES
+# USE THE rosinstall TOOL INSTEAD.
+# IF YOU CHANGE IT, USE rosinstall FOR THE CHANGES TO TAKE EFFECT
+- other: {local-name: /opt/ros/fuerte/share/ros}
+- other: {local-name: /opt/ros/fuerte/share}
+- other: {local-name: /opt/ros/fuerte/stacks}
+- setup-file: {local-name: /opt/ros/fuerte/setup.sh}
+- svn: {local-name: stacks/humanoid_msgs, uri: 'https://alufr-ros-pkg.googlecode.com/svn/trunk/humanoid_stacks/humanoid_msgs'}
+- svn: {local-name: stacks/nao_robot, uri: 'https://alufr-ros-pkg.googlecode.com/svn/trunk/humanoid_stacks/nao_robot'}
+- svn: {local-name: stacks/nao_common, uri: 'https://alufr-ros-pkg.googlecode.com/svn/trunk/humanoid_stacks/nao_common'}
