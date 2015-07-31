@@ -247,40 +247,42 @@ def processVideo(filename="videoB30m"):
     while(ret):
         # From peopledetect.py
         # http://stackoverflow.com/questions/28476343/how-to-correctly-use-peopledetect-py
-#        found,w = hog.detectMultiScale(frame, **hogParams)
-#        found_filtered = []
-#        for ri, r in enumerate(found):
-#            for qi, q in enumerate(found):
-#                if ri != qi and inside(r, q):
-#                    break
-#            else:
-#                found_filtered.append(r)
-##        print '%d (%d) found' % (len(found_filtered), len(found))
-#                
-#        
-##        draw_detections(frame, found, (0, 0, 255))
-###        draw_detections(frame, found_filtered, (0, 255, 0))
-#        # Find largest box
-#        found_sorted = sorted(found, key = normalizedRectArea, reverse = True)
-#        
-#        
-#        if len(found_sorted)>0:
-#            found_sorted = trimRects(found_sorted)  # NOT FINDING ALL CORRECT RECTS - fixed?
-#        if len(found_sorted)>0:
-#            largestFound = found_sorted[0]
-##            largestCnt = rectToCnt(largestFound)
-###            draw_detections(frame, [largestFound], (255, 0, 0))
-#            
+        found,w = hog.detectMultiScale(frame, **hogParams)
+        found_filtered = []
+        for ri, r in enumerate(found):
+            for qi, q in enumerate(found):
+                if ri != qi and inside(r, q):
+                    break
+            else:
+                found_filtered.append(r)
+#        print '%d (%d) found' % (len(found_filtered), len(found))
+                
+        
+#        draw_detections(frame, found, (0, 0, 255))
+##        draw_detections(frame, found_filtered, (0, 255, 0))
+        # Find largest box
+        found_sorted = sorted(found, key = normalizedRectArea, reverse = True)
+        
+        
+        if len(found_sorted)>0:
+            found_sorted = trimRects(found_sorted)  # NOT FINDING ALL CORRECT RECTS - fixed?
+        if len(found_sorted)>0:
+            largestFound = found_sorted[0]
+#            largestCnt = rectToCnt(largestFound)
+            draw_detections(frame, [largestFound], (255, 0, 0))
+            
 #            frameCrop = getROI(frame,largestFound)
 #            frameCrop = cv2.fastNlMeansDenoisingColored(frameCrop,None,10,10,7,21)
 #            cv2.imshow('frameCrop',frameCrop)
 #            frameQuant = colorQuant(frameCrop,18)
+        
+        
         skin = detectSkin(frame)
 #        if DISPLAY: cv2.imshow("frame, skin", np.hstack([frame, skin]))
         
         
         edges = cv2.Canny(skin,225,250)
-        outline = np.zeros(skin.shape[:2], dtype = "uint8")
+#        outline = np.zeros(skin.shape[:2], dtype = "uint8")
         (_, cnts, _) = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
 #        if DISPLAY: cv2.drawContours(outline, cnts, -1, 255, -1)
@@ -301,15 +303,21 @@ def processVideo(filename="videoB30m"):
             if h!=0: 
                 aspect_ratio = (float(w)/h)
                 if aspect_ratio>=0.6 and aspect_ratio<=1.5:
-                    if DISPLAY: cv2.drawContours(skin,[box],0,(0,0,255),1)
+                    if DISPLAY: 
+#                        cv2.drawContours(skin,[box],0,(0,0,255),1)
+                        cv2.drawContours(frame,[box],0,(0,0,255),1)
                 else:
                     timesDetected+=1
 #                        arm = whichArm(rect)
                     rects.append(rect)
-                    if DISPLAY: cv2.drawContours(skin,[box],0,(0,255,0),1)
+                    if DISPLAY: 
+#                        cv2.drawContours(skin,[box],0,(0,255,0),1)
+                        cv2.drawContours(frame,[box],0,(0,255,0),1)
 #                print "cnt", idx,"is rotated at", theta,"with aspect ratio:", aspect_ratio
 #        if DISPLAY: cv2.imshow("edges, cnts", np.hstack([edges, outline]))
-        if DISPLAY: cv2.imshow("frame, skin boxed", np.hstack([skin, frame]))
+        if DISPLAY: 
+#            cv2.imshow("frame, skin (boxed)", np.hstack([frame, skin]))
+            cv2.imshow("frame (boxed)", frame)
         if not DISPLAY: print "Times Detected:", timesDetected
             
 #            if len(rects)>2:

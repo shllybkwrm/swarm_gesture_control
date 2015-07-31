@@ -238,7 +238,15 @@ def processFiles(files, vidDict, num_points, mode="structured"):
         semi-random:  same as random (for now)
         constructed:  same as structured but affects plotting
     """
-        # should these be 1 or (1,1)?
+    
+    
+#    XMAX=639
+#    YMAX=479
+    XMID=320
+    YMID=240
+    
+    
+    # should these be 1 or (1,1)...?
     dataSetL = np.zeros((1,1))  # Dummy entry that needs to be removed later!
     dataSetLR = np.zeros((1,2))
     dataSetR = np.zeros((1,1))
