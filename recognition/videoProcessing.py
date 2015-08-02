@@ -34,6 +34,8 @@ dataExt = ".pickle"
 
 XMAX=639
 YMAX=479
+WPAD = 0.15
+HPAD = 0.05
 
 
 # From http://www.pyimagesearch.com/2015/04/06/zero-parameter-automatic-canny-edge-detection-with-python-and-opencv/
@@ -62,7 +64,8 @@ def draw_detections(img, rects, color=(0, 255, 0), thickness = 2):
     for x,y,w,h in rects:
         # the HOG detector returns slightly larger rectangles than the real objects.
         # so we slightly shrink the rectangles to get a nicer output.
-        pad_w, pad_h = int(0.15*w), int(0.05*h)
+        pad_w, pad_h = int(WPAD*w), int(HPAD*h)
+#        pad_w, pad_h = int(0*w), int(0*h)
         cv2.rectangle(img, (x+pad_w, y+pad_h), (x+w-pad_w, y+h-pad_h), color, thickness)
 
 
@@ -125,14 +128,16 @@ def drawRect(rect, img):
     
 def getROI(img,rect):
     [x,y,w,h] = rect
-    return img[y:y+h,x:x+w]
+    pad_w, pad_h = int(WPAD*w), int(HPAD*h)
+    return img[y+pad_h:y+h-pad_h, x+pad_w:x+w-pad_w]
+#    return img[y:y+h,x:x+w]
 
 
-def trimROI(rect):
-    [x,y,w,h] = rect
-    pad_w, pad_h = int(0.15*w), int(0.05*h)
-    return ( x+pad_w, y, x+w-pad_w, y+h-pad_h )
-#    return ( x+pad_w, y+pad_h, x+w-pad_w, y+h-pad_h )  # should technically be this
+#def trimROI(rect):
+#    [x,y,w,h] = rect
+#    pad_w, pad_h = int(0.15*w), int(0.05*h)
+#    return ( x+pad_w, y, x+w-pad_w, y+h-pad_h )
+##    return ( x+pad_w, y+pad_h, x+w-pad_w, y+h-pad_h )  # should technically be this
 
 
 
@@ -269,15 +274,18 @@ def processVideo(filename="videoB30m"):
         if len(found_sorted)>0:
             largestFound = found_sorted[0]
 #            largestCnt = rectToCnt(largestFound)
-            draw_detections(frame, [largestFound], (255, 0, 0))
             
-#            frameCrop = getROI(frame,largestFound)
+            frameCrop = getROI(frame,largestFound)
 #            frameCrop = cv2.fastNlMeansDenoisingColored(frameCrop,None,10,10,7,21)
 #            cv2.imshow('frameCrop',frameCrop)
 #            frameQuant = colorQuant(frameCrop,18)
+            
+            [cropX,cropY,cropW,cropH] = largestFound 
+            MIDPT = cropY+int(HPAD*cropH)+(cropH/2)
+            draw_detections(frame, [largestFound], (255, 0, 0))
         
         
-        skin = detectSkin(frame)
+        skin = detectSkin(frameCrop)
 #        if DISPLAY: cv2.imshow("frame, skin", np.hstack([frame, skin]))
         
         
@@ -289,30 +297,38 @@ def processVideo(filename="videoB30m"):
             
         rects = []
         for idx,cnt in enumerate(cnts):
-            # Upright bounding box
+            # Upright bounding box 
 #                x,y,w,h = cv2.boundingRect(cnt)
 #                cv2.rectangle(skin,(x,y),(x+w,y+h),(0,255,0),1)
 #                print "upright aspect ratio:", (float(w)/h)
-            # Rotated bounding box
+            
+            # Rotated bounding box 
             rect = cv2.minAreaRect(cnt)  # Returns a tuple: (x,y) of centroid, (w,h), and theta in deg bw horiz and first side (length?)
             box = np.int0( cv2.boxPoints(rect) )
             ((x,y),(w,h),theta) = rect
-            if w<h: theta+=180
-            else: theta+=90
-            rect = [x,y,w,h,theta] # --- output format! ---
+            newtheta = theta
+            if w<h: newtheta+=180
+            else: newtheta+=90
+            rect = [x,y,w,h,newtheta] # --- output format! ---
             if h!=0: 
                 aspect_ratio = (float(w)/h)
-                if aspect_ratio>=0.6 and aspect_ratio<=1.5:
+                if aspect_ratio>=0.6 and aspect_ratio<=1.5 and y<MIDPT:
                     if DISPLAY: 
 #                        cv2.drawContours(skin,[box],0,(0,0,255),1)
-                        cv2.drawContours(frame,[box],0,(0,0,255),1)
+                        pad_w, pad_h = int(WPAD*cropW), int(HPAD*cropH)
+                        newrect = ((x+cropX+pad_w, y+cropY+pad_h),(w,h),theta)
+                        newbox = np.int0( cv2.boxPoints(newrect) )
+                        cv2.drawContours(frame,[newbox],0,(0,0,255),1)
                 else:
                     timesDetected+=1
 #                        arm = whichArm(rect)
                     rects.append(rect)
                     if DISPLAY: 
 #                        cv2.drawContours(skin,[box],0,(0,255,0),1)
-                        cv2.drawContours(frame,[box],0,(0,255,0),1)
+                        pad_w, pad_h = int(WPAD*cropW), int(HPAD*cropH)
+                        newrect = ((x+cropX+pad_w, y+cropY+pad_h),(w,h),theta)
+                        newbox = np.int0( cv2.boxPoints(newrect) )
+                        cv2.drawContours(frame,[newbox],0,(0,255,0),1)
 #                print "cnt", idx,"is rotated at", theta,"with aspect ratio:", aspect_ratio
 #        if DISPLAY: cv2.imshow("edges, cnts", np.hstack([edges, outline]))
         if DISPLAY: 
