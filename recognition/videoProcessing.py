@@ -18,6 +18,7 @@ from sklearn.cluster import MiniBatchKMeans
 RECORD = 0
 OUTPUT = 0
 DISPLAY = 1
+USEHOG = 1
 
 ABSOLUTE = 0
 if ABSOLUTE:
@@ -31,10 +32,11 @@ else:
 suffix = "Converted"
 videoExt = ".avi"
 dataExt = ".pickle"
+filename = "videoC30m"
 
 XMAX=639
 YMAX=479
-WPAD = 0.15
+WPAD = 0.10
 HPAD = 0.05
 
 
@@ -182,6 +184,7 @@ def colorQuant(image, clusters):
 def detectSkin(frame):
       # define the upper and lower boundaries of the HSV pixel
       # intensities to be considered 'skin'
+
     # 'regular' lighting
     lower1 = np.array([0, 70, 85], dtype = "uint8")
     upper1 = np.array([10, 165, 195], dtype = "uint8")
@@ -193,6 +196,10 @@ def detectSkin(frame):
     # darker
     lower3 = np.array([0, 150, 60], dtype = "uint8")
     upper3 = np.array([15, 170, 90], dtype = "uint8")
+    # tan?  From second data set
+    lower5 = np.array([0, 145, 80], dtype = "uint8")
+    upper5 = np.array([15, 190, 135], dtype = "uint8")
+    
     
       # resize the frame, convert it to the HSV color space,
     	# and determine the HSV pixel intensities that fall into
@@ -202,15 +209,17 @@ def detectSkin(frame):
     skinMask2 = cv2.inRange(converted, lower2, upper2)
     skinMask3 = cv2.inRange(converted, lower3, upper3)
     skinMask4 = cv2.inRange(converted, lower4, upper4)
+    skinMask5 = cv2.inRange(converted, lower5, upper5)
     skinMaskTemp = cv2.bitwise_or(skinMask1, skinMask2)
     skinMaskTemp = cv2.bitwise_or(skinMaskTemp, skinMask3)
-    skinMask = cv2.bitwise_or(skinMaskTemp, skinMask4)
+    skinMaskTemp = cv2.bitwise_or(skinMaskTemp, skinMask4)
+    skinMask = cv2.bitwise_or(skinMaskTemp, skinMask5)
      
     	# apply a series of erosions and dilations to the mask
     	# using an elliptical kernel
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
     skinMask = cv2.erode(skinMask, kernel, iterations = 2)
-    skinMask = cv2.dilate(skinMask, kernel, iterations = 2)
+    skinMask = cv2.dilate(skinMask, kernel, iterations = 4)
      
     	# blur the mask to help remove noise, then apply the
     	# mask to the frame
@@ -231,6 +240,41 @@ def whichArm(rect):
 
 
 
+def isWithin(rect1,rect2):  # rect1 > rect2
+    ((x1,y1),(w1,h1),theta1) = rect1
+    ((x2,y2),(w2,h2),theta2) = rect2
+#    [x2,y2, w2,h2, theta2] = rect2
+    
+    if x2>x1 and y2>y1 and (x2+w2)<(x1+w1) and (y2+h2)<(y1+h1):
+        return True
+    else:
+        return False
+
+
+def checkIfWithin(rects, targetRect):
+    
+    trimmedRects = []
+    for idx1,rect1 in enumerate(rects):
+        if isWithin(rect1,targetRect):
+            return True
+        else:
+            pass
+#        for idx2,rect2 in enumerate(rects[idx1:]):
+#            if idx1==idx2:
+#                pass
+#            else:
+#                if isWithin(rect1, rect2):
+#                    pass
+#                else:
+#                    trimmedRects.append()
+#    
+#    return trimmedRects
+    return False
+        
+
+
+
+
 def processVideo(filename="videoB30m"):
     
     cap = cv2.VideoCapture(videoPath+filename+suffix+videoExt)
@@ -244,46 +288,59 @@ def processVideo(filename="videoB30m"):
 #    fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False)
     hog = cv2.HOGDescriptor()
     hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-    hogParams = {'winStride': (8,8), 'padding': (128,128), 'scale': 1.05}
+    hogParams = {'winStride': (8,8), 'padding': (128,128), 'scale': 1.025}
     
     timesDetected = 0
-    ret, frame = cap.read()
+    ret,frame = cap.read()
     
     while(ret):
-        # From peopledetect.py
-        # http://stackoverflow.com/questions/28476343/how-to-correctly-use-peopledetect-py
-        found,w = hog.detectMultiScale(frame, **hogParams)
-        found_filtered = []
-        for ri, r in enumerate(found):
-            for qi, q in enumerate(found):
-                if ri != qi and inside(r, q):
-                    break
-            else:
-                found_filtered.append(r)
-#        print '%d (%d) found' % (len(found_filtered), len(found))
+        
+        if USEHOG:
+            
+            # From peopledetect.py
+            # http://stackoverflow.com/questions/28476343/how-to-correctly-use-peopledetect-py
+            found,w = hog.detectMultiScale(frame, **hogParams)
+            found_filtered = []
+            for ri, r in enumerate(found):
+                for qi, q in enumerate(found):
+                    if ri != qi and inside(r, q):
+                        break
+                else:
+                    found_filtered.append(r)
+    #        print '%d (%d) found' % (len(found_filtered), len(found))
+                    
+            
+    #        draw_detections(frame, found, (0, 0, 255))
+    ##        draw_detections(frame, found_filtered, (0, 255, 0))
+            # Find largest box
+            found_sorted = sorted(found, key = normalizedRectArea, reverse = True)
+            
+            
+            if len(found_sorted)>0:
+                found_sorted = trimRects(found_sorted)  # NOT FINDING ALL CORRECT RECTS - fixed?
+            if len(found_sorted)>0:
+                largestFound = found_sorted[0]
+    #            largestCnt = rectToCnt(largestFound)
                 
-        
-#        draw_detections(frame, found, (0, 0, 255))
-##        draw_detections(frame, found_filtered, (0, 255, 0))
-        # Find largest box
-        found_sorted = sorted(found, key = normalizedRectArea, reverse = True)
-        
-        
-        if len(found_sorted)>0:
-            found_sorted = trimRects(found_sorted)  # NOT FINDING ALL CORRECT RECTS - fixed?
-        if len(found_sorted)>0:
-            largestFound = found_sorted[0]
-#            largestCnt = rectToCnt(largestFound)
+                frameCrop = getROI(frame,largestFound)
+    #            frameCrop = cv2.fastNlMeansDenoisingColored(frameCrop,None,10,10,7,21)
+    #            cv2.imshow('frameCrop',frameCrop)
+    #            frameQuant = colorQuant(frameCrop,18)
+                
+                [cropX,cropY,cropW,cropH] = largestFound 
+                MIDPT = cropY+int(HPAD*cropH)+(cropH/3)
+                draw_detections(frame, [largestFound], (255, 0, 0))
             
-            frameCrop = getROI(frame,largestFound)
-#            frameCrop = cv2.fastNlMeansDenoisingColored(frameCrop,None,10,10,7,21)
-#            cv2.imshow('frameCrop',frameCrop)
-#            frameQuant = colorQuant(frameCrop,18)
+            else:  # coordinates are off!!
+                frameCrop=frame
+                [cropX,cropY,cropW,cropH] = [0,0,639,479]
+                MIDPT = cropY+int(HPAD*cropH)+(cropH/3)
+                
+        else:
+            frameCrop=frame
+            [cropX,cropY,cropW,cropH] = [0,0,639,479]
+            MIDPT = cropY+int(HPAD*cropH)+(cropH/3)
             
-            [cropX,cropY,cropW,cropH] = largestFound 
-            MIDPT = cropY+int(HPAD*cropH)+(cropH/2)
-            draw_detections(frame, [largestFound], (255, 0, 0))
-        
         
         skin = detectSkin(frameCrop)
 #        if DISPLAY: cv2.imshow("frame, skin", np.hstack([frame, skin]))
@@ -295,39 +352,44 @@ def processVideo(filename="videoB30m"):
         cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
 #        if DISPLAY: cv2.drawContours(outline, cnts, -1, 255, -1)
             
-        rects = []
+        tempRects,rects = [],[]
         for idx,cnt in enumerate(cnts):
             # Upright bounding box 
-#                x,y,w,h = cv2.boundingRect(cnt)
-#                cv2.rectangle(skin,(x,y),(x+w,y+h),(0,255,0),1)
-#                print "upright aspect ratio:", (float(w)/h)
+#            x,y,w,h = cv2.boundingRect(cnt)
+#            cv2.rectangle(skin,(x,y),(x+w,y+h),(0,255,0),1)
+#            print "upright aspect ratio:", (float(w)/h)
             
             # Rotated bounding box 
             rect = cv2.minAreaRect(cnt)  # Returns a tuple: (x,y) of centroid, (w,h), and theta in deg bw horiz and first side (length?)
-            box = np.int0( cv2.boxPoints(rect) )
-            ((x,y),(w,h),theta) = rect
+            tempRects.append(rect)
+        
+#        tempRects = checkOverlaps(tempRects)
+        
+        for idx,rect in enumerate(tempRects):
+            box = np.int0( cv2.boxPoints(rect) ) 
+            ((x,y),(w,h),theta) = rect 
             newtheta = theta
             if w<h: newtheta+=180
             else: newtheta+=90
-            rect = [x,y,w,h,newtheta] # --- output format! ---
             if h!=0: 
+                
+                pad_w, pad_h = int(WPAD*cropW), int(HPAD*cropH)
+                newrect = ((x+cropX+pad_w, y+cropY+pad_h),(w,h),theta)
+                newbox = np.int0( cv2.boxPoints(newrect) )
+                
                 aspect_ratio = (float(w)/h)
-                if aspect_ratio>=0.6 and aspect_ratio<=1.5 and y<MIDPT:
+                if (aspect_ratio>=0.6 and aspect_ratio<=1.5) or y>MIDPT or checkIfWithin(tempRects, rect):
                     if DISPLAY: 
 #                        cv2.drawContours(skin,[box],0,(0,0,255),1)
-                        pad_w, pad_h = int(WPAD*cropW), int(HPAD*cropH)
-                        newrect = ((x+cropX+pad_w, y+cropY+pad_h),(w,h),theta)
-                        newbox = np.int0( cv2.boxPoints(newrect) )
                         cv2.drawContours(frame,[newbox],0,(0,0,255),1)
                 else:
                     timesDetected+=1
 #                        arm = whichArm(rect)
+                    
+                    rect = [x,y,w,h,newtheta] # --- output format! ---
                     rects.append(rect)
                     if DISPLAY: 
 #                        cv2.drawContours(skin,[box],0,(0,255,0),1)
-                        pad_w, pad_h = int(WPAD*cropW), int(HPAD*cropH)
-                        newrect = ((x+cropX+pad_w, y+cropY+pad_h),(w,h),theta)
-                        newbox = np.int0( cv2.boxPoints(newrect) )
                         cv2.drawContours(frame,[newbox],0,(0,255,0),1)
 #                print "cnt", idx,"is rotated at", theta,"with aspect ratio:", aspect_ratio
 #        if DISPLAY: cv2.imshow("edges, cnts", np.hstack([edges, outline]))
@@ -366,8 +428,8 @@ def processVideo(filename="videoB30m"):
 
 
 if __name__ == "__main__":
-    # currently only using L to R videos
-    filename = "videoA30m"
+#    # currently only using L to R videos
+#    filename = "videoA10m"
     print "Processing file ", filename 
     
     if 'B' in filename:  # status: done for one flag

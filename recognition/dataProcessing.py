@@ -966,7 +966,7 @@ if __name__ == "__main__":
     files = [["videoB30m","videoB25m","videoB20m","videoB15m","videoB10m"], 
              ["videoD30m","videoD25m","videoD20m","videoD15m","videoD10m"],
              ["videoG30m","videoG25m","videoG20m","videoG15m","videoG10m"], 
-             ["videoM30m","videoM25m","videoM20m","videoM15m","videoM10m"]]
+             ["videoM30m","videoM25m","videoM20m","videoM15m","videoM10m"]] 
     
     vidDict = {"videoB30m":"L", "videoB25m":"R", "videoB20m":"R", "videoB15m":"L", "videoB10m":"L",
                "videoD30m":"L", "videoD25m":"R", "videoD20m":"L", "videoD15m":"R", "videoD10m":"L",
