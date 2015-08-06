@@ -18,7 +18,6 @@ from sklearn.cluster import MiniBatchKMeans
 RECORD = 0
 OUTPUT = 0
 DISPLAY = 1
-USEHOG = 1
 
 ABSOLUTE = 0
 if ABSOLUTE:
@@ -32,12 +31,17 @@ else:
 suffix = "Converted"
 videoExt = ".avi"
 dataExt = ".pickle"
-filename = "videoC30m"
+filename = "videoN10m"
+
+USEHOG = 0
+if USEHOG:
+    WPAD = 0.10
+    HPAD = 0.05
+else:
+    WPAD,HPAD=0,0
 
 XMAX=639
 YMAX=479
-WPAD = 0.10
-HPAD = 0.05
 
 
 # From http://www.pyimagesearch.com/2015/04/06/zero-parameter-automatic-canny-edge-detection-with-python-and-opencv/
