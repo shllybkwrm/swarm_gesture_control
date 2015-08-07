@@ -561,7 +561,7 @@ def plotResultMatrices(testData, num_dist, num_points, title="Test set results",
 
 
 
-def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
+def plotVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=2):
     """
     Modes:
         1:  plot only votes without weighting)
@@ -608,7 +608,7 @@ def plotVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=2):
 
 
 
-def plotMultiVoteChart(gestureData, num_gestures=4, title="Vote chart", mode=3, flag="default", swarmSizes=[]):
+def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, flag="default", swarmSizes=[]):
     """
     Modes:
         1:  plot only votes without weighting
@@ -966,18 +966,28 @@ if __name__ == "__main__":
     files = [["videoB30m","videoB25m","videoB20m","videoB15m","videoB10m"], 
              ["videoD30m","videoD25m","videoD20m","videoD15m","videoD10m"],
              ["videoG30m","videoG25m","videoG20m","videoG15m","videoG10m"], 
-             ["videoM30m","videoM25m","videoM20m","videoM15m","videoM10m"]] 
+             ["videoM30m","videoM25m","videoM20m","videoM15m","videoM10m"], 
+             ["videoA30m","videoA25m","videoA20m","videoA15m","videoA10m"], 
+             ["videoC30m","videoC25m","videoC20m","videoC15m","videoC10m"], 
+             ["videoF30m","videoF25m","videoF20m","videoF15m","videoF10m"], 
+             ["videoJ30m","videoJ25m","videoJ20m","videoJ15m","videoJ10m"], 
+             ["videoN30m","videoN25m","videoN20m","videoN15m","videoN10m"]] 
     
     vidDict = {"videoB30m":"L", "videoB25m":"R", "videoB20m":"R", "videoB15m":"L", "videoB10m":"L",
                "videoD30m":"L", "videoD25m":"R", "videoD20m":"L", "videoD15m":"R", "videoD10m":"L",
                "videoG30m":"R", "videoG25m":"L", "videoG20m":"R", "videoG15m":"L", "videoG10m":"R",
-               "videoM30m":"R", "videoM25m":"R", "videoM20m":"L", "videoM15m":"R", "videoM10m":"L",}
+               "videoM30m":"R", "videoM25m":"R", "videoM20m":"L", "videoM15m":"R", "videoM10m":"L",
+               "videoA30m":"R", "videoA25m":"L", "videoA20m":"R", "videoA15m":"L", "videoA10m":"R",
+               "videoC30m":"L", "videoC25m":"R", "videoC20m":"L", "videoC15m":"R", "videoC10m":"L",
+               "videoF30m":"R", "videoF25m":"L", "videoF20m":"R", "videoF15m":"L", "videoF10m":"R",
+               "videoJ30m":"L", "videoJ25m":"R", "videoJ20m":"L", "videoJ15m":"R", "videoJ10m":"L",
+               "videoN30m":"R", "videoN25m":"L", "videoN20m":"R", "videoN15m":"L", "videoN10m":"R",}
     
 
 #    resultSet = np.zeros((len(points), num_gestures, 1, 5))
     resultSet = []
-    num_gestures = len(files)  # 4
-    num_dist = len(files[0])  # 5
+    num_gestures = len(files)  # 4->9 
+    num_dist = len(files[0])  # 5 
     points = [4,4,4,4]  # Total size will be num*num_dist (5)
     testSizes = [3]  # Sizes of swarms for allcomb  # TODO: per each num_points or just once? 
     """
@@ -987,7 +997,7 @@ if __name__ == "__main__":
         3:  2 arms -> double weight
         4:  single arm -> less weight depending on num-choices
     """
-    voteModes = [1,2,3,4]  # must be same size as points!  # TODO:  Index from 0
+    voteModes = [1,2,3,4]  # must be same size as points!  # TODO:  Index from 0?
     """
     test modes:
         structured:     evenly spaced 
@@ -1022,20 +1032,20 @@ if __name__ == "__main__":
         # ----- L -----
         print "\nRunning classification for left arm data"
 #        label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
-        label_names = ["BPQRS","DJV","EFG","AKLMN"]
+        label_names = ["BPQRS","DJV","EFG","AKLMN","AKLMN","CTUY","EFG","DJV","AKLMN"]
         title = "Learning Curves for left arm data"
         testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title=title, mode=voteMode)
         
         # ----- LR -----
         print "\nRunning classification for both arm data"
-        label_names = ["B","D","G","M"]
+        label_names = ["B","D","G","M","A","C","F","J","N"]
         title = "Learning Curves for both arm data"
         testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title=title, mode=voteMode)
         
         # ----- R -----
         print "\nRunning classification for right arm data"
 #        label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
-        label_names = ["ABCD","ABCD","GNSV","FJMRY"]
+        label_names = ["ABCD","ABCD","GNSV","FJMRY","ABCD","ABCD","FJMRY","FJMRY","GNSV"]
         title = "Learning Curves for right arm data"
         testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title=title, mode=voteMode)
     
