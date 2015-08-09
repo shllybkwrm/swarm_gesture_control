@@ -114,7 +114,7 @@ def plot_confusion_matrix(cm, target_names, title='Confusion matrix', cmap=plt.c
 
 
 
-def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Learning Curves", mode = 1 ):
+def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Learning Curves", mode = 4 ):
     """
     Modes:
         1:  no weighting - 1 vote per robot
@@ -137,6 +137,19 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
                 weight[idx] = 1.0/len(name)
         else:
             weight = 1
+            
+        # --- Editing data for same arm position data ---
+        
+        trimmedLabels = []
+        rejectIds = []
+        for idx,label in enumerate(label_names):
+            if label not in trimmedLabels:
+                trimmedLabels.append(label)
+                # TODO:  keep dataSet[idx]
+            else:
+                rejectIds.append(idx)
+                # TODO: append dataSet[idx] onto dataSet[idx of label in trimmedLabels]
+        
         
     else:  # 2 arm data
         clf = SVC(C=1.0)
