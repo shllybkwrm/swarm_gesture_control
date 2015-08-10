@@ -127,7 +127,9 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     
     print "Fitting classifier to data"
     
+    flag = 0
     if dataSet.ndim==1:  # Single arm data
+        flag = 1
         clf = SVC(C=0.75)
         dataSet = dataSet.reshape(-1, 1)
         testSet = testSet.reshape(-1, 1)
@@ -140,15 +142,15 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
             
         # --- Editing data for same arm position data ---
         
-        trimmedLabels = []
-        rejectIds = []
+        lookupIds = {}
         for idx,label in enumerate(label_names):
-            if label not in trimmedLabels:
-                trimmedLabels.append(label)
-                # TODO:  keep dataSet[idx]
-            else:
-                rejectIds.append(idx)
-                # TODO: append dataSet[idx] onto dataSet[idx of label in trimmedLabels]
+            if label not in lookupIds:
+                lookupIds.setdefault(label, [])
+                # TODO:  keep all labels together, not just pairs 
+#                firstIdx = label_names.index(label)
+            lookupIds[label].append(idx)
+                # TODO: change dataLabel for idx into firstIdx ?
+                # TODO: OR - change voting method?? 1-arm votes actually count for all possibilities?
         
         
     else:  # 2 arm data
@@ -237,6 +239,16 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     
 #    print classification_report(testLabels[:,0], predictions, target_names=label_names)
     
+    
+    if flag:  # Single arm data
+        for idx,pred in enumerate(predictions):
+#            if pred in lookupIds:
+            label = label_names[int(pred)]
+            if len(lookupIds[label])>1:
+                predictions[idx] = int( ''.join(str(e) for e in lookupIds[label]) )
+    
+    
+    
 #    testLabels = np.append(testLabels, predictions, axis=1)
     return np.concatenate((predictions.reshape(-1,1).astype(int), confidence), axis=1)
      
@@ -255,8 +267,8 @@ def processFiles(files, vidDict, num_points, mode="structured"):
     
 #    XMAX=639
 #    YMAX=479
-    XMID=320
-    YMID=240
+#    XMID=320
+#    YMID=240
     
     
     # should these be 1 or (1,1)...?
@@ -685,8 +697,14 @@ def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, 
                     
                 for testPoint in swarm:
                     [act,x,y,res,conf] = testPoint
-                    votes[swarmID, res] += 1
-                    weights[swarmID, res] += abs(conf)
+                    if type(res)=='str' or res>=num_gestures:
+                        res = str(int(res))
+                        for e in res:
+                           votes[swarmID, int(e)] += 1
+                           weights[swarmID, int(e)] += abs(conf) 
+                    else:
+                        votes[swarmID, res] += 1
+                        weights[swarmID, res] += abs(conf)
             
             
                 if flag!="average":
@@ -804,7 +822,10 @@ def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, 
             plt.ylabel('Normalized votes')
             plt.xlabel('Gestures')
             if flag!="constructed":
-                plt.legend()
+                if gesture > num_gestures/2:
+                    plt.legend(loc=2)
+                else:
+                    plt.legend()
             plt.tight_layout()
         
         if mode==2:
@@ -843,7 +864,10 @@ def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, 
             plt.ylabel('Normalized votes by weight')
             plt.xlabel('Gestures')
             if flag!="constructed":
-                plt.legend()
+                if gesture > num_gestures/2:
+                    plt.legend(loc=2)
+                else:
+                    plt.legend()
             plt.tight_layout()
         
         plt.show()
@@ -1045,22 +1069,22 @@ if __name__ == "__main__":
         # ----- L -----
         print "\nRunning classification for left arm data"
 #        label_names = ["(B)PQRS","(D)JV","EF(G)","AKL(M)N"]  # No longer iterator
-        label_names = ["BPQRS","DJV","EFG","AKLMN","AKLMN","CTUY","EFG","DJV","AKLMN"]
+        label_names_L = ["BPQRS","DJV","EFG","AKLMN","AKLMN","CTUY","EFG","DJV","AKLMN"]
         title = "Learning Curves for left arm data"
-        testResultL = runSVM(dataSetL, dataLabelsL, label_names, testSetL, testLabelsL, title=title, mode=voteMode)
+        testResultL = runSVM(dataSetL, dataLabelsL, label_names_L, testSetL, testLabelsL, title=title, mode=voteMode)
         
         # ----- LR -----
         print "\nRunning classification for both arm data"
-        label_names = ["B","D","G","M","A","C","F","J","N"]
+        label_names_LR = ["B","D","G","M","A","C","F","J","N"]
         title = "Learning Curves for both arm data"
-        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names, testSetLR, testLabelsLR, title=title, mode=voteMode)
+        testResultLR = runSVM(dataSetLR, dataLabelsLR, label_names_LR, testSetLR, testLabelsLR, title=title, mode=voteMode)
         
         # ----- R -----
         print "\nRunning classification for right arm data"
 #        label_names = ["A(B)CD","ABC(D)","(G)NSV","FJ(M)RY"]
-        label_names = ["ABCD","ABCD","GNSV","FJMRY","ABCD","ABCD","FJMRY","FJMRY","GNSV"]
+        label_names_R = ["ABCD","ABCD","GNSV","FJMRY","ABCD","ABCD","FJMRY","FJMRY","GNSV"]
         title = "Learning Curves for right arm data"
-        testResultR = runSVM(dataSetR, dataLabelsR, label_names, testSetR, testLabelsR, title=title, mode=voteMode)
+        testResultR = runSVM(dataSetR, dataLabelsR, label_names_R, testSetR, testLabelsR, title=title, mode=voteMode)
     
 
         
@@ -1069,7 +1093,7 @@ if __name__ == "__main__":
                 
         # Sort by gesture, position, distance
         testData = np.concatenate((testLabels, testResults),axis=1)  # act, pos, dist, res, conf
-        testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)
+        testData.view('i8,i8,f8,i8,f8').sort(order=['f0','f2','f1'], axis=0)  # sort by label, pos, dist
     #    testData = testLabels.copy()
     #    testLabels[:,0] = (testLabels[:,0]==testResults[:,0])  # Which results were correct
         
