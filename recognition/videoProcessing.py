@@ -17,7 +17,7 @@ from sklearn.cluster import MiniBatchKMeans
 
 RECORD = 0
 OUTPUT = 0
-DISPLAY = 1
+DISPLAY = 0
 
 ABSOLUTE = 0
 if ABSOLUTE:

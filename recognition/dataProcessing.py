@@ -10,7 +10,7 @@ import numpy as np
 from sklearn import cross_validation
 from sklearn.svm import SVC
 from sklearn.learning_curve import learning_curve
-from sklearn.metrics import confusion_matrix#, classification_report
+from sklearn.metrics import confusion_matrix, classification_report
 from scipy import stats, misc
 import itertools
 try:
@@ -27,12 +27,12 @@ else:
     dataPath = dir+"/data/"
 dataExt = ".pickle"
 
-PLOT = 0
+PLOT = 1
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 #    from matplotlib.lines import Line2D
 
-CV = 0
+CV = 1
 
 
 
@@ -163,7 +163,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
 #        X_train, X_test, y_train, y_test = cross_validation.train_test_split(dataSet, dataLabels, test_size=0.1, random_state=0)
 #        clf.fit(X_train, y_train)
 #        print "Accuracy:", clf.score(X_test, y_test)
-   
+    
     if PLOT and CV:
         plt.figure()
         plt.subplot(121)
@@ -193,7 +193,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
 #        print(cm_normalized)
 #        plt.figure()
 #        plot_confusion_matrix(cm_normalized, label_names, title='Normalized confusion matrix')
-
+        
         plt.show()
     
     
@@ -237,7 +237,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         plot_confusion_matrix(cm_normalized, label_names)
         plt.show()
     
-#    print classification_report(testLabels[:,0], predictions, target_names=label_names)
+    print classification_report(testLabels[:,0], predictions, target_names=label_names)
     
     
     if flag:  # Single arm data
@@ -520,7 +520,7 @@ def processResults(testLabels, testResults, num_gestures, points_per_gesture):
 
 
 
-def plotResultMatrices(testData, num_dist, num_points, title="Test set results", mode=2):
+def plotResultMatrices(testData, num_dist, num_points, title="Test set results", mode=3):
     """
     Modes:
         1:  plot only votes without weighting
@@ -633,7 +633,7 @@ def plotVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=2):
 
 
 
-def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, flag="default", swarmSizes=[]):
+def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, plotFlag=1, flag="default", swarmSizes=[]):
     """
     Modes:
         1:  plot only votes without weighting
@@ -791,86 +791,88 @@ def plotMultiVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=3, 
         
         # --- Plotting starts here ---
         
-        plt.figure()
-        if flag=="noCalc":
-            width = 1.0/((num_points*num_swarms)+1)
-        else:
-            width = 1.0/(num_swarms+1)  # extra space for between gesture groups
-        
-        if mode==2:
-            plt.subplot(121)
-        if mode==1 or mode==2:
-            print "Votes:\n", votes, "\n"
+        if plotFlag:
             
-            plt.title(title2)
-#            colors = iter(["r", "b", "g"])
-            colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
-            for idx in range(num_swarms):
-                if flag=="constructed":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
-                elif flag=="average":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
-                elif flag=="noCalc":
-                    print "Not set up, use different testing mode instead!"
-                else:
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
-                autolabel(bars)
-            
-            plt.grid(zorder=0)
-            plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
-            plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
-            plt.ylabel('Normalized votes')
-            plt.xlabel('Gestures')
-            if flag!="constructed":
-                if gesture > num_gestures/2:
-                    plt.legend(loc=2)
-                else:
-                    plt.legend()
-            plt.tight_layout()
-        
-        if mode==2:
-            plt.subplot(122)
-        if mode==2 or mode==3:
-            print "Weighted votes:\n", weights, "\n"
-            
-#            plt.title("Weighted "+title2)
-#            if flag=="noCalc":
-#                plt.title("Average votes for all combinations of swarm size "+str(swarmSizes[0])+"for gesture "+str(gesture))
-#            else:
-            plt.title(title2)
-            
+            plt.figure()
             if flag=="noCalc":
-                colors = iter(cm.rainbow(np.linspace(0, 1, num_points*num_swarms)))
+                width = 1.0/((num_points*num_swarms)+1)
             else:
-                colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+                width = 1.0/(num_swarms+1)  # extra space for between gesture groups
             
-            for idx in range(num_swarms):
-                if flag=="constructed":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3,  label="swarm size "+str(len(gestureData[gesture][idx])) )
-                elif flag=="average":
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights, yerr=errorBar, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
-                elif flag=="noCalc":
-                    for idx2 in range(num_points):
-#                        bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(swarmSizes[idx]) )
-                        bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="vote mode "+str(idx2) )
-                        autolabel(bars)
-                else:
-                    bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
-                autolabel(bars)
+            if mode==2:
+                plt.subplot(121)
+            if mode==1 or mode==2:
+                print "Votes:\n", votes, "\n"
                 
-            plt.grid(zorder=0)
-            plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
-            plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
-            plt.ylabel('Normalized votes by weight')
-            plt.xlabel('Gestures')
-            if flag!="constructed":
-                if gesture > num_gestures/2:
-                    plt.legend(loc=2)
+                plt.title(title2)
+    #            colors = iter(["r", "b", "g"])
+                colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+                for idx in range(num_swarms):
+                    if flag=="constructed":
+                        bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[gesture][idx])) )
+                    elif flag=="average":
+                        bars = plt.bar(np.arange(num_gestures)+idx*width, votes, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
+                    elif flag=="noCalc":
+                        print "Not set up, use different testing mode instead!"
+                    else:
+                        bars = plt.bar(np.arange(num_gestures)+idx*width, votes[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
+                    autolabel(bars)
+                
+                plt.grid(zorder=0)
+                plt.xticks(np.arange(num_gestures+width), np.arange(num_gestures))
+                plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
+                plt.ylabel('Normalized votes')
+                plt.xlabel('Gestures')
+                if flag!="constructed":
+                    if gesture > num_gestures/2:
+                        plt.legend(loc=2)
+                    else:
+                        plt.legend()
+                plt.tight_layout()
+            
+            if mode==2:
+                plt.subplot(122)
+            if mode==2 or mode==3:
+                print "Weighted votes:\n", weights, "\n"
+                
+    #            plt.title("Weighted "+title2)
+    #            if flag=="noCalc":
+    #                plt.title("Average votes for all combinations of swarm size "+str(swarmSizes[0])+"for gesture "+str(gesture))
+    #            else:
+                plt.title(title2)
+                
+                if flag=="noCalc":
+                    colors = iter(cm.rainbow(np.linspace(0, 1, num_points*num_swarms)))
                 else:
-                    plt.legend()
-            plt.tight_layout()
-        
-        plt.show()
+                    colors = iter(cm.rainbow(np.linspace(0, 1, num_swarms)))
+                
+                for idx in range(num_swarms):
+                    if flag=="constructed":
+                        bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3,  label="swarm size "+str(len(gestureData[gesture][idx])) )
+                    elif flag=="average":
+                        bars = plt.bar(np.arange(num_gestures)+idx*width, weights, yerr=errorBar, width=width, color=next(colors), zorder=3,  label="all swarms of size "+str(swarmSize) )
+                    elif flag=="noCalc":
+                        for idx2 in range(num_points):
+    #                        bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="all swarms of size "+str(swarmSizes[idx]) )
+                            bars = plt.bar(np.arange(num_gestures)+idx2*width, weights[idx2], width=width, color=next(colors), zorder=3, label="vote mode "+str(idx2) )
+                            autolabel(bars)
+                    else:
+                        bars = plt.bar(np.arange(num_gestures)+idx*width, weights[idx,:], yerr=errorBar[idx,:], width=width, color=next(colors), zorder=3, label="swarm size "+str(len(gestureData[idx][0])) )
+                    autolabel(bars)
+                    
+                plt.grid(zorder=0)
+                plt.xticks(np.arange(num_gestures)+width, np.arange(num_gestures))
+                plt.yticks(np.arange(0.0, 1.1, 0.1), np.arange(0.0, 1.1, 0.1))
+                plt.ylabel('Normalized votes by weight')
+                plt.xlabel('Gestures')
+                if flag!="constructed":
+                    if gesture > num_gestures/2:
+                        plt.legend(loc=2)
+                    else:
+                        plt.legend()
+                plt.tight_layout()
+            
+            plt.show()
         
     return weightSet
 
@@ -1118,7 +1120,7 @@ if __name__ == "__main__":
         
 #    if PLOT:
     if testMode=="structured":
-        plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3)
+        plotMultiVoteChart(resultSet, num_gestures, title="Votes for gesture ", mode=3, plotFlag=0)
     
     
     elif testMode=="constructed":
@@ -1131,22 +1133,22 @@ if __name__ == "__main__":
                 print "- num points = 5 *", num_points, "-"
                 if constructMode!="allcomb":
     #                pass
-                    plotMultiVoteChart(testSwarms[idx2], num_gestures, title="Constructed swarm votes for gesture ", mode=3, flag=testMode)
+                    plotMultiVoteChart(testSwarms[idx2], num_gestures, title="Constructed swarm votes for gesture ", mode=3, plotFlag=0, flag=testMode)
                 else:
                     print "Collecting averaged votes"
     #                averageVotes(testSwarms) 
     #                pass
-#                    weightSet[idx1,idx2] = plotMultiVoteChart(testSwarms[idx2], num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="average") 
-                    weightSet.append( plotMultiVoteChart(testSwarms[idx2], num_gestures, title="All combinations of swarm votes for gesture ", mode=3, flag="average") )
+#                    weightSet[idx1,idx2] = plotMultiVoteChart(testSwarms[idx2], num_gestures, title="All combinations of swarm votes for gesture ", mode=3, plotFlag=0, flag="average") 
+                    weightSet.append( plotMultiVoteChart(testSwarms[idx2], num_gestures, title="All combinations of swarm votes for gesture ", mode=3, plotFlag=0, flag="average") )
 
 #        print "Weights are", weightSet
-        plt.close("all")
+#        plt.close("all")
         # Need to send in swarmSizes when using flag="noCalc"
-        plotMultiVoteChart(weightSet, num_gestures, title="Average votes for all combinations of swarm size "+str(testSizes[0])+" for gesture ", mode=3, flag="noCalc", swarmSizes=testSizes)
+        plotMultiVoteChart(weightSet, num_gestures, title="Average votes for all combinations of swarm size "+str(testSizes[0])+" for gesture ", mode=3, plotFlag=1, flag="noCalc", swarmSizes=testSizes)
 
 #    if PLOT: 
 #        for i in range(num_gestures):
-#            plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Semi-random swarm results for gesture "+str(i), mode=3)
+#            plotResultMatrices(testSwarms[i][-1], num_dist, num_points, title="Cumulative results for all combinations of swarm size "+str(testSizes[0])+" for gesture "+str(i), mode=3)
 
 
 

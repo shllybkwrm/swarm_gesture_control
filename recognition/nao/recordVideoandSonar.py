@@ -60,8 +60,8 @@ def main(robotIP):
         
     # This records a 320*240 MJPG video at 10 fps. (CHANGED)
     # Note MJPG can't be recorded with a framerate lower than 3 fps.
-    videoRecorderProxy.setResolution(2)
-    videoRecorderProxy.setFrameRate(20)
+    videoRecorderProxy.setResolution(2)  # 640x480; 3 = 1280*960
+    videoRecorderProxy.setFrameRate(20)  # Max 30
     videoRecorderProxy.setVideoFormat("MJPG")
     videoRecorderProxy.startRecording("/home/nao/recordings/cameras", "videoN10m")#+str(time.time()) )
     
