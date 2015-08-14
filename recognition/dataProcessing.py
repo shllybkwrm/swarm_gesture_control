@@ -173,7 +173,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
     #    cv = cross_validation.ShuffleSplit(digits.data.shape[0], n_iter=10, test_size=0.2, random_state=0)
         cv = cross_validation.ShuffleSplit(dataSet.shape[0], n_iter=10, test_size=0.2, random_state=0)
     #    estimator = SVC(gamma=0.01)
-        plot_learning_curve(clf, title, dataSet, dataLabels, (0.5, 1.01), cv=cv, n_jobs=4)
+        plot_learning_curve(clf, title, dataSet, dataLabels, (0.35, 1.01), cv=cv, n_jobs=4)
         
         # Confusion matrix
         # From http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
@@ -237,7 +237,7 @@ def runSVM( dataSet, dataLabels, label_names, testSet, testLabels, title = "Lear
         plot_confusion_matrix(cm_normalized, label_names)
         plt.show()
     
-    print classification_report(testLabels[:,0], predictions, target_names=label_names)
+#    print classification_report(testLabels[:,0], predictions, target_names=label_names)
     
     
     if flag:  # Single arm data
@@ -600,7 +600,7 @@ def plotVoteChart(gestureData, num_gestures=9, title="Vote chart", mode=2):
         votes[res] += 1
         weights[res] += abs(conf)
     
-    print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
+#    print "Votes:\n", votes, "\nWeighted votes:\n", weights, "\n"
     
     plt.figure()
     
@@ -1102,7 +1102,7 @@ if __name__ == "__main__":
     
         print  "\n", num_points, "test points per distance"
         if PLOT:
-            plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results", mode=2)
+            plotResultMatrices(testData, num_dist, num_points, title="Cumulative test set results", mode=3)
     
             
 #        print "Saving / sorting results by gesture"

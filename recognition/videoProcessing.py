@@ -17,7 +17,7 @@ from sklearn.cluster import MiniBatchKMeans
 
 RECORD = 0
 OUTPUT = 0
-DISPLAY = 0
+DISPLAY = 1
 
 ABSOLUTE = 0
 if ABSOLUTE:
@@ -31,11 +31,11 @@ else:
 suffix = "Converted"
 videoExt = ".avi"
 dataExt = ".pickle"
-filename = "videoN10m"
+filename = "videoN30m"
 
-USEHOG = 0
+USEHOG = 1
 if USEHOG:
-    WPAD = 0.10
+    WPAD = 0.05
     HPAD = 0.05
 else:
     WPAD,HPAD=0,0
@@ -257,7 +257,7 @@ def isWithin(rect1,rect2):  # rect1 > rect2
 
 def checkIfWithin(rects, targetRect):
     
-    trimmedRects = []
+#    trimmedRects = []
     for idx1,rect1 in enumerate(rects):
         if isWithin(rect1,targetRect):
             return True
@@ -382,7 +382,14 @@ def processVideo(filename="videoB30m"):
                 newbox = np.int0( cv2.boxPoints(newrect) )
                 
                 aspect_ratio = (float(w)/h)
-                if (aspect_ratio>=0.6 and aspect_ratio<=1.5) or y>MIDPT or checkIfWithin(tempRects, rect):
+                
+                if idx==0:
+                    largest_area = w*h
+                else:
+                    area = w*h
+                    size_ratio = (area/largest_area)
+                
+                if (aspect_ratio>=0.6 and aspect_ratio<=1.5) or y>MIDPT or checkIfWithin(tempRects, rect):# or size_ratio<0.1:
                     if DISPLAY: 
 #                        cv2.drawContours(skin,[box],0,(0,0,255),1)
                         cv2.drawContours(frame,[newbox],0,(0,0,255),1)
